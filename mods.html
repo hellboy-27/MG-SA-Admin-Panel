@@ -187,7 +187,7 @@
               ${mods.map(m => {
                 let img = '';
                 try {
-                  const imgs = typeof m.image_filename === 'string' ? JSON.parse(m.image_filename) : (m.image_filename || []);
+                  const imgs = Array.isArray(m.image_filename) ? m.image_filename : (typeof m.image_filename === 'string' ? JSON.parse(m.image_filename) : []);
                   if (imgs.length) img = `${API}/uploads/images/${imgs[0]}`;
                 } catch(e) {}
                 return `
