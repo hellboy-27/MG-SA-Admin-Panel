@@ -77,6 +77,7 @@
     </div>
   </div>
 
+  <script src="utils.js"></script>
   <script src="app.js"></script>
   <script>
     if (!checkAuth()) throw new Error('Not authenticated');
@@ -85,13 +86,16 @@
     let currentFilter = 'new';
 
     async function loadSuggestions() {
+      showLoading('Cargando sugerencias...');
       try {
         const data = await apiRequest('/api/suggestions');
+        hideLoading();
         allSuggestions = data.suggestions || [];
         updateBadges();
         renderSuggestions();
       } catch (e) {
-        document.getElementById('suggestionsList').innerHTML = '<p style="color:var(--accent-pink)">Error loading</p>';
+        hideLoading();
+        showToast('Error al cargar sugerencias', 'error');
       }
     }
 
@@ -136,12 +140,31 @@
     }
 
     async function markRead(id) {
-      try { await apiRequest(`/api/suggestions/${id}/read`, { method: 'POST' }); loadSuggestions(); } catch (e) { alert('Error'); }
+      showLoading('Marcando como leida...');
+      try {
+        await apiRequest(`/api/suggestions/${id}/read`, { method: 'POST' });
+        hideLoading();
+        showToast('Sugerencia marcada como leida', 'success');
+        loadSuggestions();
+      } catch (e) {
+        hideLoading();
+        showToast('Error al marcar como leida', 'error');
+      }
     }
 
     async function deleteSuggestion(id) {
-      if (!confirm('Eliminar?')) return;
-      try { await apiRequest(`/api/suggestions/${id}`, { method: 'DELETE' }); loadSuggestions(); } catch (e) { alert('Error'); }
+      const ok = await showConfirm('Eliminar sugerencia?');
+      if (!ok) return;
+      showLoading('Eliminando sugerencia...');
+      try {
+        await apiRequest(`/api/suggestions/${id}`, { method: 'DELETE' });
+        hideLoading();
+        showToast('Sugerencia eliminada', 'success');
+        loadSuggestions();
+      } catch (e) {
+        hideLoading();
+        showToast('Error al eliminar sugerencia', 'error');
+      }
     }
 
     loadSuggestions();

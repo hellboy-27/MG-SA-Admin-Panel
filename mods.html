@@ -85,6 +85,7 @@
     </div>
   </div>
 
+  <script src="utils.js"></script>
   <script src="app.js"></script>
   <script>
     if (!checkAuth()) throw new Error('Not authenticated');
@@ -109,7 +110,7 @@
           const existing = typeof mod.image_filename === 'string' ? JSON.parse(mod.image_filename) : mod.image_filename;
           if (Array.isArray(existing)) {
             existing.forEach(name => {
-              const url = `http://localhost:3000/uploads/images/${name}`;
+              const url = `${API}/uploads/images/${name}`;
               pendingImages.push({ name, url });
             });
             renderPreview();
@@ -125,14 +126,16 @@
       pendingImages = [];
     }
 
-    function previewImages(input) {
+    async function previewImages(input) {
       const files = input.files;
+      showToast('Comprimiendo imagenes...', 'info');
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const url = URL.createObjectURL(file);
-        pendingImages.push({ name: file.name, url, file });
+        const compressed = await compressImage(files[i]);
+        const url = URL.createObjectURL(compressed);
+        pendingImages.push({ name: compressed.name, url, file: compressed });
       }
       renderPreview();
+      showToast('Imagenes listas', 'success');
     }
 
     function removePreviewImg(idx) {
@@ -214,10 +217,13 @@
 
     async function editMod(id) {
       try {
+        showLoading('Cargando mod...');
         const data = await apiRequest(`/api/mods/${id}`);
+        hideLoading();
         showForm(data.mod || data);
       } catch(e) {
-        alert('Error cargando mod');
+        hideLoading();
+        showToast('Error cargando mod', 'error');
       }
     }
 
@@ -227,7 +233,10 @@
       const images = document.getElementById('modImages').files;
       const modFile = document.getElementById('modFile').files[0];
 
-      if (!title) return alert('El nombre es requerido');
+      if (!title) return showToast('El nombre es requerido', 'warning');
+
+      const isEdit = !!editingId;
+      showLoading(isEdit ? 'Actualizando mod...' : 'Creando mod...');
 
       const formData = new FormData();
       formData.append('title', title);
@@ -243,8 +252,8 @@
 
       try {
         const token = getToken();
-        const url = editingId ? `/api/mods/${editingId}` : '/api/mods';
-        const method = editingId ? 'PUT' : 'POST';
+        const url = isEdit ? `/api/mods/${editingId}` : '/api/mods';
+        const method = isEdit ? 'PUT' : 'POST';
 
         const res = await fetch(`${API}${url}`, {
           method,
@@ -252,22 +261,32 @@
           body: formData
         });
 
+        hideLoading();
+
         if (!res.ok) throw new Error('Failed');
 
         hideForm();
+        showToast(isEdit ? 'Mod actualizado correctamente' : 'Mod creado correctamente', 'success');
         loadMods();
       } catch (e) {
-        alert('Error guardando mod');
+        hideLoading();
+        showToast('Error guardando mod', 'error');
       }
     }
 
     async function deleteMod(id) {
-      if (!confirm('Eliminar este mod?')) return;
+      const ok = await showConfirm('Eliminar este mod permanentemente?');
+      if (!ok) return;
+
+      showLoading('Eliminando mod...');
       try {
         await apiRequest(`/api/mods/${id}`, { method: 'DELETE' });
+        hideLoading();
+        showToast('Mod eliminado correctamente', 'success');
         loadMods();
       } catch (e) {
-        alert('Error eliminando mod');
+        hideLoading();
+        showToast('Error eliminando mod', 'error');
       }
     }
 

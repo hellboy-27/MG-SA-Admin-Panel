@@ -48,13 +48,16 @@
     </div>
   </div>
 
+  <script src="utils.js"></script>
   <script src="app.js"></script>
   <script>
     if (!checkAuth()) throw new Error('Not authenticated');
 
     async function loadUsers() {
+      showLoading('Cargando usuarios...');
       try {
         const data = await apiRequest('/api/users');
+        hideLoading();
         const users = data.users || [];
         if (!users.length) {
           document.getElementById('usersList').innerHTML = '<p style="color:var(--text-muted)">No hay usuarios</p>';
@@ -87,17 +90,23 @@
           </table>
         `;
       } catch (e) {
-        document.getElementById('usersList').innerHTML = '<p style="color:var(--accent-pink)">Error loading users</p>';
+        hideLoading();
+        showToast('Error al cargar usuarios', 'error');
       }
     }
 
     async function deleteUser(id) {
-      if (!confirm('Delete this user?')) return;
+      const ok = await showConfirm('Eliminar este usuario?');
+      if (!ok) return;
+      showLoading('Eliminando usuario...');
       try {
         await apiRequest(`/api/users/${id}`, { method: 'DELETE' });
+        hideLoading();
+        showToast('Usuario eliminado', 'success');
         loadUsers();
       } catch (e) {
-        alert(e.message);
+        hideLoading();
+        showToast(e.message, 'error');
       }
     }
 
