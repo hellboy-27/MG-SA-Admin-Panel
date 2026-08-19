@@ -1,4 +1,4 @@
-const API = 'http://localhost:3000';
+const API = 'https://mg-sa-backend.onrender.com';
 
 function getToken() {
   return sessionStorage.getItem('adminToken');
