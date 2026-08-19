@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src https://cdnjs.cloudflare.com; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000; img-src 'self' data: blob: http://localhost:3000 http://127.0.0.1:3000;">
+  <title>MG-SA Admin - Comentarios</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>MG-SA Admin</h2>
+        <p>Definitive Mods</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><span class="icon"><i class="fa-solid fa-chart-line"></i></span><span class="nav-text">Dashboard</span></a>
+        <a href="mods.html"><span class="icon"><i class="fa-solid fa-cube"></i></span><span class="nav-text">Mods</span></a>
+        <a href="users.html"><span class="icon"><i class="fa-solid fa-users"></i></span><span class="nav-text">Usuarios</span></a>
+        <a href="suggestions.html"><span class="icon"><i class="fa-solid fa-lightbulb"></i></span><span class="nav-text">Sugerencias</span></a>
+        <a href="comments.html" class="active"><span class="icon"><i class="fa-solid fa-comments"></i></span><span class="nav-text">Comentarios</span></a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-chevron-left"></i></button>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+          <h1>Comentarios</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-user">
+            <div class="avatar" id="userAvatar">A</div>
+            <span id="userName">Admin</span>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div id="commentsList"><p style="color:var(--text-muted)">Cargando...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if (!checkAuth()) throw new Error('Not authenticated');
+
+    async function loadComments() {
+      try {
+        const modsData = await apiRequest('/api/mods');
+        const mods = modsData.mods || [];
+        let allComments = [];
+
+        for (const mod of mods) {
+          const commentsData = await apiRequest(`/api/mods/${mod.id}/comments`);
+          (commentsData.comments || []).forEach(c => {
+            allComments.push({ ...c, modTitle: mod.title, modId: mod.id });
+          });
+        }
+
+        if (!allComments.length) {
+          document.getElementById('commentsList').innerHTML = '<p style="color:var(--text-muted)">No hay comentarios</p>';
+          return;
+        }
+
+        document.getElementById('commentsList').innerHTML = `
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Comentario</th>
+                <th>Mod</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${allComments.map(c => `
+                <tr>
+                  <td>${esc(c.username)}</td>
+                  <td>${esc(c.content)}</td>
+                  <td>${esc(c.modTitle)}</td>
+                  <td>${new Date(c.created_at).toLocaleDateString('es-ES')}</td>
+                  <td>
+                    <button class="btn-logout" style="padding:4px 8px;font-size:.75rem" onclick="deleteComment(${c.modId},${c.id})">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (e) {
+        document.getElementById('commentsList').innerHTML = '<p style="color:var(--accent-pink)">Error loading</p>';
+      }
+    }
+
+    async function deleteComment(modId, commentId) {
+      if (!confirm('Delete comment?')) return;
+      try {
+        await apiRequest(`/api/mods/${modId}/comments/${commentId}`, { method: 'DELETE' });
+        loadComments();
+      } catch (e) {
+        alert('Error');
+      }
+    }
+
+    loadComments();
+  </script>
+</body>
+</html>

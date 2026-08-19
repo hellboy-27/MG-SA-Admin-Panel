@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src https://cdnjs.cloudflare.com; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000; img-src 'self' data: blob: http://localhost:3000 http://127.0.0.1:3000;">
+  <title>MG-SA Admin - Usuarios</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>MG-SA Admin</h2>
+        <p>Definitive Mods</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><span class="icon"><i class="fa-solid fa-chart-line"></i></span><span class="nav-text">Dashboard</span></a>
+        <a href="mods.html"><span class="icon"><i class="fa-solid fa-cube"></i></span><span class="nav-text">Mods</span></a>
+        <a href="users.html" class="active"><span class="icon"><i class="fa-solid fa-users"></i></span><span class="nav-text">Usuarios</span></a>
+        <a href="suggestions.html"><span class="icon"><i class="fa-solid fa-lightbulb"></i></span><span class="nav-text">Sugerencias</span></a>
+        <a href="comments.html"><span class="icon"><i class="fa-solid fa-comments"></i></span><span class="nav-text">Comentarios</span></a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-chevron-left"></i></button>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+          <h1>Gestionar Usuarios</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-user">
+            <div class="avatar" id="userAvatar">A</div>
+            <span id="userName">Admin</span>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div id="usersList"><p style="color:var(--text-muted)">Cargando...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if (!checkAuth()) throw new Error('Not authenticated');
+
+    async function loadUsers() {
+      try {
+        const data = await apiRequest('/api/users');
+        const users = data.users || [];
+        if (!users.length) {
+          document.getElementById('usersList').innerHTML = '<p style="color:var(--text-muted)">No hay usuarios</p>';
+          return;
+        }
+        document.getElementById('usersList').innerHTML = `
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Registro</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${users.map(u => `
+                <tr>
+                  <td>${esc(u.username)}</td>
+                  <td>${esc(u.email)}</td>
+                  <td><span class="badge badge-${u.role}">${u.role}</span></td>
+                  <td>${new Date(u.created_at).toLocaleDateString('es-ES')}</td>
+                  <td>
+                    ${u.role !== 'admin' ? `<button class="btn-logout" style="padding:4px 8px;font-size:.75rem" onclick="deleteUser(${u.id})"><i class="fa-solid fa-trash"></i></button>` : ''}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (e) {
+        document.getElementById('usersList').innerHTML = '<p style="color:var(--accent-pink)">Error loading users</p>';
+      }
+    }
+
+    async function deleteUser(id) {
+      if (!confirm('Delete this user?')) return;
+      try {
+        await apiRequest(`/api/users/${id}`, { method: 'DELETE' });
+        loadUsers();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    loadUsers();
+  </script>
+</body>
+</html>

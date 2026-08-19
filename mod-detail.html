@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src https://cdnjs.cloudflare.com; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000; img-src 'self' data: blob: http://localhost:3000 http://127.0.0.1:3000;">
+  <title>MG-SA Admin - Detalle Mod</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .detail-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .detail-main-img { width: 100%; height: 300px; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--border-color); }
+    .detail-thumbs { display: flex; gap: 8px; margin-top: 8px; }
+    .detail-thumbs img { width: 72px; height: 52px; object-fit: cover; border-radius: 6px; border: 2px solid transparent; cursor: pointer; transition: var(--transition); }
+    .detail-thumbs img:hover, .detail-thumbs img.active { border-color: var(--accent-orange); }
+    .detail-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .detail-stat { background: var(--bg-tertiary); border-radius: var(--radius); padding: 16px; text-align: center; }
+    .detail-stat .stat-icon { font-size: 1.2rem; margin-bottom: 4px; }
+    .detail-stat .stat-val { font-size: 1.4rem; font-weight: 700; }
+    .detail-stat .stat-lbl { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+    .detail-section { margin-bottom: 20px; }
+    .detail-section-title { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); }
+    .detail-desc { font-size: 0.92rem; line-height: 1.7; color: var(--text-primary); }
+    .detail-rating-grid { display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: start; }
+    .detail-rating-avg { text-align: center; padding: 20px; background: var(--bg-tertiary); border-radius: var(--radius); }
+    .detail-rating-avg .big-number { font-size: 2.5rem; font-weight: 700; color: var(--accent-yellow); }
+    .detail-rating-avg .big-stars { color: var(--accent-yellow); font-size: 1rem; margin-top: 4px; }
+    .detail-rating-avg .total { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+    .detail-comment { display: flex; gap: 12px; padding: 14px; background: var(--bg-tertiary); border-radius: var(--radius); margin-bottom: 8px; }
+    .detail-comment-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; color: #fff; flex-shrink: 0; }
+    .detail-comment-body { flex: 1; }
+    .detail-comment-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .detail-comment-user { font-weight: 600; font-size: 0.88rem; }
+    .detail-comment-date { font-size: 0.72rem; color: var(--text-muted); }
+    .detail-comment-text { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; }
+    .back-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-secondary); font-size: 0.85rem; cursor: pointer; transition: var(--transition); margin-bottom: 20px; }
+    .back-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+    @media (max-width: 768px) {
+      .detail-hero { grid-template-columns: 1fr; }
+      .detail-info-grid { grid-template-columns: 1fr 1fr; }
+      .detail-rating-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>MG-SA Admin</h2>
+        <p>Definitive Mods</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><span class="icon"><i class="fa-solid fa-chart-line"></i></span><span class="nav-text">Dashboard</span></a>
+        <a href="mods.html" class="active"><span class="icon"><i class="fa-solid fa-cube"></i></span><span class="nav-text">Mods</span></a>
+        <a href="users.html"><span class="icon"><i class="fa-solid fa-users"></i></span><span class="nav-text">Usuarios</span></a>
+        <a href="suggestions.html"><span class="icon"><i class="fa-solid fa-lightbulb"></i></span><span class="nav-text">Sugerencias</span></a>
+        <a href="comments.html"><span class="icon"><i class="fa-solid fa-comments"></i></span><span class="nav-text">Comentarios</span></a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-chevron-left"></i></button>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+          <h1><i class="fa-solid fa-cube" style="color:var(--accent-orange);margin-right:8px"></i> Detalle del Mod</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-user">
+            <div class="avatar" id="userAvatar">A</div>
+            <span id="userName">Admin</span>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <button class="back-btn" onclick="history.back()"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+        <div id="modDetail"><p style="color:var(--text-muted)">Cargando...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if (!checkAuth()) throw new Error('Not authenticated');
+
+    const params = new URLSearchParams(window.location.search);
+    const modId = params.get('id');
+
+    if (!modId) {
+      document.getElementById('modDetail').innerHTML = '<p style="color:var(--accent-pink)">Mod no encontrado</p>';
+    } else {
+      loadDetail(modId);
+    }
+
+    async function loadDetail(id) {
+      const container = document.getElementById('modDetail');
+      try {
+        const data = await apiRequest(`/api/mods/${id}`);
+        const mod = data.mod || data;
+
+        let images = [];
+        if (mod.image_filename) {
+          try {
+            images = typeof mod.image_filename === 'string' ? JSON.parse(mod.image_filename) : mod.image_filename;
+          } catch(e) {}
+        }
+
+        const ratings = mod.ratings || mod.reviews || [];
+        const comments = mod.comments || [];
+        const ratingAvg = mod.rating_avg || 0;
+        const ratingCount = mod.rating_count || 0;
+        const stars = [5,4,3,2,1];
+
+        const mainImg = images.length
+          ? `http://localhost:3000/uploads/images/${images[0]}`
+          : `https://picsum.photos/seed/mod-${mod.id}/800/400`;
+
+        container.innerHTML = `
+          <div class="detail-hero">
+            <div>
+              <img class="detail-main-img" id="mainImg" src="${mainImg}" alt="${esc(mod.title)}" onerror="this.src='https://picsum.photos/seed/mod-${mod.id}/800/400'">
+              ${images.length > 1 ? `
+              <div class="detail-thumbs">
+                ${images.map((img, i) => `<img src="http://localhost:3000/uploads/images/${esc(img)}" alt="thumb ${i}" class="${i===0?'active':''}" onclick="changeImg(this, 'http://localhost:3000/uploads/images/${esc(img)}')">`).join('')}
+              </div>` : ''}
+            </div>
+            <div>
+              <div class="detail-info-grid">
+                <div class="detail-stat">
+                  <div class="stat-icon"><i class="fa-solid fa-hashtag" style="color:var(--accent-orange)"></i></div>
+                  <div class="stat-val">#${mod.id}</div>
+                  <div class="stat-lbl">ID</div>
+                </div>
+                <div class="detail-stat">
+                  <div class="stat-icon"><i class="fa-solid fa-download" style="color:var(--accent-teal)"></i></div>
+                  <div class="stat-val">${mod.downloads || 0}</div>
+                  <div class="stat-lbl">Descargas</div>
+                </div>
+                <div class="detail-stat">
+                  <div class="stat-icon"><i class="fa-solid fa-star" style="color:var(--accent-yellow)"></i></div>
+                  <div class="stat-val">${ratingAvg.toFixed(1)}</div>
+                  <div class="stat-lbl">Rating</div>
+                </div>
+                <div class="detail-stat">
+                  <div class="stat-icon"><i class="fa-solid fa-comment" style="color:var(--accent-pink)"></i></div>
+                  <div class="stat-val">${comments.length}</div>
+                  <div class="stat-lbl">Comentarios</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="detail-section-title"><i class="fa-solid fa-heading" style="margin-right:6px"></i> ${esc(mod.title)}</div>
+            <div class="detail-desc">${esc(mod.description || 'Sin descripcion')}</div>
+          </div>
+
+          ${ratingCount > 0 ? `
+          <div class="detail-section">
+            <div class="detail-section-title"><i class="fa-solid fa-star" style="margin-right:6px"></i> Valoraciones (${ratingCount})</div>
+            <div class="detail-rating-grid">
+              <div class="detail-rating-avg">
+                <div class="big-number">${ratingAvg.toFixed(1)}</div>
+                <div class="big-stars">${'★'.repeat(Math.round(ratingAvg))}${'☆'.repeat(5 - Math.round(ratingAvg))}</div>
+                <div class="total">${ratingCount} valoraciones</div>
+              </div>
+              <div>
+                ${stars.map(s => {
+                  const count = ratings.filter(r => Math.round(r.rating) === s).length;
+                  const pct = ratingCount ? Math.round((count / ratingCount) * 100) : 0;
+                  return `<div class="rating-bar"><span class="stars">${'★'.repeat(s)}${'☆'.repeat(5-s)}</span><div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div><span style="font-size:.75rem;color:var(--text-muted);min-width:30px;text-align:right">${count} (${pct}%)</span></div>`;
+                }).join('')}
+              </div>
+            </div>
+          </div>` : ''}
+
+          ${comments.length > 0 ? `
+          <div class="detail-section">
+            <div class="detail-section-title"><i class="fa-solid fa-comments" style="margin-right:6px"></i> Comentarios (${comments.length})</div>
+            ${comments.map(c => `
+            <div class="detail-comment">
+              <div class="detail-comment-avatar">${(c.username || c.user_name || 'U').charAt(0).toUpperCase()}</div>
+              <div class="detail-comment-body">
+                <div class="detail-comment-head">
+                  <span class="detail-comment-user">${esc(c.username || c.user_name || 'Anon')}</span>
+                  <span class="detail-comment-date">${new Date(c.created_at).toLocaleDateString('es', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
+                </div>
+                <div class="detail-comment-text">${esc(c.comment || c.text || '')}</div>
+              </div>
+            </div>
+            `).join('')}
+          </div>` : ''}
+        `;
+      } catch(e) {
+        container.innerHTML = '<p style="color:var(--accent-pink)">Error cargando detalles del mod</p>';
+      }
+    }
+
+    function changeImg(el, src) {
+      document.getElementById('mainImg').src = src;
+      document.querySelectorAll('.detail-thumbs img').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+    }
+  </script>
+</body>
+</html>

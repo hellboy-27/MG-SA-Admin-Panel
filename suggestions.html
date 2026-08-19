@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src https://cdnjs.cloudflare.com; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000; img-src 'self' data: blob: http://localhost:3000 http://127.0.0.1:3000;">
+  <title>MG-SA Admin - Sugerencias</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .sug-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+    .sug-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:20px;}
+    .sug-card.unread{border-left:3px solid var(--accent-yellow);}
+    .sug-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+    .sug-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent-yellow),var(--accent-orange));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:var(--bg-primary);flex-shrink:0;}
+    .sug-meta{flex:1;}
+    .sug-name{font-weight:600;font-size:.88rem;}
+    .sug-date{font-size:.72rem;color:var(--text-muted);}
+    .sug-status{padding:3px 10px;border-radius:20px;font-size:.68rem;font-weight:600;text-transform:uppercase;}
+    .sug-status.new{background:rgba(255,194,71,.15);color:var(--accent-yellow);}
+    .sug-status.read{background:rgba(0,229,199,.15);color:var(--accent-teal);}
+    .sug-message{color:var(--text-primary);font-size:.88rem;line-height:1.6;margin-bottom:14px;}
+    .sug-actions{display:flex;gap:6px;}
+    .sug-actions button{padding:6px 12px;border:none;border-radius:6px;font-size:.76rem;font-weight:600;cursor:pointer;}
+    .btn-read{background:rgba(0,229,199,.15);color:var(--accent-teal);}
+    .btn-delete{background:rgba(255,46,99,.15);color:var(--accent-pink);}
+    .filter-tabs{display:flex;gap:0;margin-bottom:24px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border-color);background:var(--bg-secondary);}
+    .filter-tab{flex:1;padding:12px;border:none;background:transparent;color:var(--text-secondary);font-size:.85rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
+    .filter-tab.active{background:linear-gradient(135deg,var(--accent-orange),var(--accent-pink));color:#fff;}
+    .filter-tab .badge{background:rgba(255,255,255,.2);padding:1px 7px;border-radius:10px;font-size:.7rem;}
+    @media(max-width:1100px){.sug-grid{grid-template-columns:repeat(2,1fr);}}
+    @media(max-width:700px){.sug-grid{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>MG-SA Admin</h2>
+        <p>Definitive Mods</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><span class="icon"><i class="fa-solid fa-chart-line"></i></span><span class="nav-text">Dashboard</span></a>
+        <a href="mods.html"><span class="icon"><i class="fa-solid fa-cube"></i></span><span class="nav-text">Mods</span></a>
+        <a href="users.html"><span class="icon"><i class="fa-solid fa-users"></i></span><span class="nav-text">Usuarios</span></a>
+        <a href="suggestions.html" class="active"><span class="icon"><i class="fa-solid fa-lightbulb"></i></span><span class="nav-text">Sugerencias</span></a>
+        <a href="comments.html"><span class="icon"><i class="fa-solid fa-comments"></i></span><span class="nav-text">Comentarios</span></a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-chevron-left"></i></button>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+          <h1>Sugerencias de Mods</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-user">
+            <div class="avatar" id="userAvatar">A</div>
+            <span id="userName">Admin</span>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="filterSuggestions('new',this)"><i class="fa-solid fa-circle" style="font-size:.4rem"></i> Nuevas <span class="badge" id="badgeNew">0</span></button>
+          <button class="filter-tab" onclick="filterSuggestions('read',this)"><i class="fa-solid fa-check" style="font-size:.55rem"></i> Leidas <span class="badge" id="badgeRead">0</span></button>
+          <button class="filter-tab" onclick="filterSuggestions('all',this)"><i class="fa-solid fa-list" style="font-size:.55rem"></i> Todas <span class="badge" id="badgeAll">0</span></button>
+        </div>
+        <div class="sug-grid" id="suggestionsList"><p style="color:var(--text-muted)">Cargando...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if (!checkAuth()) throw new Error('Not authenticated');
+
+    let allSuggestions = [];
+    let currentFilter = 'new';
+
+    async function loadSuggestions() {
+      try {
+        const data = await apiRequest('/api/suggestions');
+        allSuggestions = data.suggestions || [];
+        updateBadges();
+        renderSuggestions();
+      } catch (e) {
+        document.getElementById('suggestionsList').innerHTML = '<p style="color:var(--accent-pink)">Error loading</p>';
+      }
+    }
+
+    function updateBadges() {
+      document.getElementById('badgeNew').textContent = allSuggestions.filter(s => s.status === 'new').length;
+      document.getElementById('badgeRead').textContent = allSuggestions.filter(s => s.status === 'read').length;
+      document.getElementById('badgeAll').textContent = allSuggestions.length;
+    }
+
+    function renderSuggestions() {
+      const filtered = currentFilter === 'all' ? allSuggestions : allSuggestions.filter(s => s.status === currentFilter);
+      if (!filtered.length) {
+        document.getElementById('suggestionsList').innerHTML = '<p style="color:var(--text-muted)">No hay sugerencias</p>';
+        return;
+      }
+      document.getElementById('suggestionsList').innerHTML = filtered.map(s => {
+        const date = new Date(s.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const isUnread = s.status === 'new';
+        return `<div class="sug-card${isUnread ? ' unread' : ''}">
+          <div class="sug-header">
+            <div class="sug-avatar">${(s.username || 'U')[0].toUpperCase()}</div>
+            <div class="sug-meta">
+              <div class="sug-name">${esc(s.username)}</div>
+              <div class="sug-date">${date}</div>
+            </div>
+            <span class="sug-status ${isUnread ? 'new' : 'read'}">${isUnread ? 'Nueva' : 'Leida'}</span>
+          </div>
+          <div class="sug-message">${esc(s.message)}</div>
+          <div class="sug-actions">
+            ${isUnread ? `<button class="btn-read" onclick="markRead(${s.id})"><i class="fa-solid fa-check"></i> Marcar leida</button>` : ''}
+            <button class="btn-delete" onclick="deleteSuggestion(${s.id})"><i class="fa-solid fa-trash"></i> Eliminar</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function filterSuggestions(filter, btn) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      renderSuggestions();
+    }
+
+    async function markRead(id) {
+      try { await apiRequest(`/api/suggestions/${id}/read`, { method: 'POST' }); loadSuggestions(); } catch (e) { alert('Error'); }
+    }
+
+    async function deleteSuggestion(id) {
+      if (!confirm('Eliminar?')) return;
+      try { await apiRequest(`/api/suggestions/${id}`, { method: 'DELETE' }); loadSuggestions(); } catch (e) { alert('Error'); }
+    }
+
+    loadSuggestions();
+  </script>
+</body>
+</html>

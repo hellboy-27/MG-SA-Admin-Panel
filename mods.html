@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src https://cdnjs.cloudflare.com; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000; img-src 'self' data: blob: http://localhost:3000 http://127.0.0.1:3000;">
+  <title>MG-SA Admin - Mods</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>MG-SA Admin</h2>
+        <p>Definitive Mods</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><span class="icon"><i class="fa-solid fa-chart-line"></i></span><span class="nav-text">Dashboard</span></a>
+        <a href="mods.html" class="active"><span class="icon"><i class="fa-solid fa-cube"></i></span><span class="nav-text">Mods</span></a>
+        <a href="users.html"><span class="icon"><i class="fa-solid fa-users"></i></span><span class="nav-text">Usuarios</span></a>
+        <a href="suggestions.html"><span class="icon"><i class="fa-solid fa-lightbulb"></i></span><span class="nav-text">Sugerencias</span></a>
+        <a href="comments.html"><span class="icon"><i class="fa-solid fa-comments"></i></span><span class="nav-text">Comentarios</span></a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-chevron-left"></i></button>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" id="menuToggle"><i class="fa-solid fa-bars"></i></button>
+          <h1><i class="fa-solid fa-cube" style="color:var(--accent-orange);margin-right:8px"></i> Gestionar Mods</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-user">
+            <div class="avatar" id="userAvatar">A</div>
+            <span id="userName">Admin</span>
+          </div>
+          <button class="btn-logout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <button class="btn-submit" style="width:auto;padding:10px 20px;margin-bottom:20px" onclick="showForm()">
+          <i class="fa-solid fa-plus"></i> Agregar Mod
+        </button>
+
+        <div id="modsList"><p style="color:var(--text-muted)">Cargando...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="addModal">
+    <div class="modal-card" style="max-width:600px">
+      <div class="modal-header">
+        <h2 id="formTitle"><i class="fa-solid fa-cube" style="color:var(--accent-orange);margin-right:8px"></i> Agregar Mod</h2>
+        <button class="modal-close" onclick="hideForm()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="modTitle" placeholder="Nombre del mod">
+      </div>
+      <div class="form-group">
+        <label>Descripcion</label>
+        <textarea id="modDesc" rows="3" placeholder="Descripcion del mod"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="form-group">
+          <label><i class="fa-solid fa-images" style="margin-right:4px"></i> Imagenes</label>
+          <input type="file" id="modImages" multiple accept="image/*" onchange="previewImages(this)">
+          <div id="imgPreview" class="img-preview-grid"></div>
+        </div>
+        <div class="form-group">
+          <label><i class="fa-solid fa-file-zipper" style="margin-right:4px"></i> Archivo del Mod</label>
+          <input type="file" id="modFile" accept=".zip,.rar,.7z">
+          <div id="filePreview" style="margin-top:8px;font-size:0.82rem;color:var(--text-muted)"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn-submit" style="width:auto;padding:10px 24px" onclick="saveMod()"><i class="fa-solid fa-save" style="margin-right:4px"></i> Guardar</button>
+        <button class="btn-logout" onclick="hideForm()"><i class="fa-solid fa-xmark" style="margin-right:4px"></i> Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if (!checkAuth()) throw new Error('Not authenticated');
+
+    let editingId = null;
+    let pendingImages = [];
+
+    function showForm(mod) {
+      editingId = mod ? mod.id : null;
+      document.getElementById('formTitle').innerHTML = mod
+        ? '<i class="fa-solid fa-pen" style="color:var(--accent-yellow);margin-right:8px"></i> Editar Mod'
+        : '<i class="fa-solid fa-cube" style="color:var(--accent-orange);margin-right:8px"></i> Agregar Mod';
+      document.getElementById('modTitle').value = mod ? mod.title : '';
+      document.getElementById('modDesc').value = mod ? (mod.description || '') : '';
+      document.getElementById('modFile').value = '';
+      document.getElementById('modImages').value = '';
+      document.getElementById('imgPreview').innerHTML = '';
+      document.getElementById('filePreview').innerHTML = '';
+      pendingImages = [];
+      if (mod && mod.image_filename) {
+        try {
+          const existing = typeof mod.image_filename === 'string' ? JSON.parse(mod.image_filename) : mod.image_filename;
+          if (Array.isArray(existing)) {
+            existing.forEach(name => {
+              const url = `http://localhost:3000/uploads/images/${name}`;
+              pendingImages.push({ name, url });
+            });
+            renderPreview();
+          }
+        } catch(e) {}
+      }
+      document.getElementById('addModal').classList.add('open');
+    }
+
+    function hideForm() {
+      document.getElementById('addModal').classList.remove('open');
+      editingId = null;
+      pendingImages = [];
+    }
+
+    function previewImages(input) {
+      const files = input.files;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const url = URL.createObjectURL(file);
+        pendingImages.push({ name: file.name, url, file });
+      }
+      renderPreview();
+    }
+
+    function removePreviewImg(idx) {
+      pendingImages.splice(idx, 1);
+      renderPreview();
+    }
+
+    function renderPreview() {
+      const container = document.getElementById('imgPreview');
+      container.innerHTML = pendingImages.map((img, i) => `
+        <div class="img-preview-item">
+          <img src="${img.url}" alt="preview">
+          <button class="remove-img" onclick="removePreviewImg(${i})">&times;</button>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('modFile').addEventListener('change', function() {
+      const el = document.getElementById('filePreview');
+      if (this.files[0]) {
+        el.innerHTML = `<i class="fa-solid fa-file-zipper" style="color:var(--accent-teal);margin-right:4px"></i> ${esc(this.files[0].name)} (${(this.files[0].size / 1024 / 1024).toFixed(1)} MB)`;
+      } else {
+        el.innerHTML = '';
+      }
+    });
+
+    async function loadMods() {
+      try {
+        const data = await apiRequest('/api/mods');
+        const mods = data.mods || [];
+        if (!mods.length) {
+          document.getElementById('modsList').innerHTML = '<p style="color:var(--text-muted)">No hay mods registrados</p>';
+          return;
+        }
+        document.getElementById('modsList').innerHTML = `
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Titulo</th>
+                <th>Tamano</th>
+                <th>Descargas</th>
+                <th>Rating</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${mods.map(m => `
+                <tr>
+                  <td>${m.id}</td>
+                  <td>${esc(m.title)}</td>
+                  <td>${esc(m.size || 'N/A')}</td>
+                  <td>${m.downloads || 0}</td>
+                  <td>${m.rating_avg ? '★ ' + m.rating_avg.toFixed(1) : '—'} <span style="color:var(--text-muted);font-size:.75rem">(${m.rating_count || 0})</span></td>
+                  <td style="display:flex;gap:4px;flex-wrap:wrap">
+                    <button class="btn-action btn-view" title="Ver detalles" onclick="viewMod(${m.id})">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                    <button class="btn-action btn-edit" title="Editar" onclick="editMod(${m.id})">
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button class="btn-action btn-delete" title="Eliminar" onclick="deleteMod(${m.id})">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (e) {
+        document.getElementById('modsList').innerHTML = '<p style="color:var(--accent-pink)">Error cargando mods</p>';
+      }
+    }
+
+    function viewMod(id) {
+      window.location.href = `mod-detail.html?id=${id}`;
+    }
+
+    async function editMod(id) {
+      try {
+        const data = await apiRequest(`/api/mods/${id}`);
+        showForm(data.mod || data);
+      } catch(e) {
+        alert('Error cargando mod');
+      }
+    }
+
+    async function saveMod() {
+      const title = document.getElementById('modTitle').value.trim();
+      const description = document.getElementById('modDesc').value.trim();
+      const images = document.getElementById('modImages').files;
+      const modFile = document.getElementById('modFile').files[0];
+
+      if (!title) return alert('El nombre es requerido');
+
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+
+      const existingNames = pendingImages.filter(p => !p.file).map(p => p.name);
+      if (existingNames.length) formData.append('existing_images', JSON.stringify(existingNames));
+
+      for (let i = 0; i < images.length; i++) {
+        formData.append('images', images[i]);
+      }
+      if (modFile) formData.append('mod_file', modFile);
+
+      try {
+        const token = getToken();
+        const url = editingId ? `/api/mods/${editingId}` : '/api/mods';
+        const method = editingId ? 'PUT' : 'POST';
+
+        const res = await fetch(`${API}${url}`, {
+          method,
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+
+        if (!res.ok) throw new Error('Failed');
+
+        hideForm();
+        loadMods();
+      } catch (e) {
+        alert('Error guardando mod');
+      }
+    }
+
+    async function deleteMod(id) {
+      if (!confirm('Eliminar este mod?')) return;
+      try {
+        await apiRequest(`/api/mods/${id}`, { method: 'DELETE' });
+        loadMods();
+      } catch (e) {
+        alert('Error eliminando mod');
+      }
+    }
+
+    document.getElementById('addModal').addEventListener('click', function(e) {
+      if (e.target === this) hideForm();
+    });
+
+    loadMods();
+  </script>
+</body>
+</html>
