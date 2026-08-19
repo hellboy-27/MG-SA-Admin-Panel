@@ -117,7 +117,7 @@
         const stars = [5,4,3,2,1];
 
         const mainImg = images.length
-          ? `http://localhost:3000/uploads/images/${images[0]}`
+          ? `${API}/uploads/images/${images[0]}`
           : `https://picsum.photos/seed/mod-${mod.id}/800/400`;
 
         container.innerHTML = `
@@ -126,7 +126,7 @@
               <img class="detail-main-img" id="mainImg" src="${mainImg}" alt="${esc(mod.title)}" onerror="this.src='https://picsum.photos/seed/mod-${mod.id}/800/400'">
               ${images.length > 1 ? `
               <div class="detail-thumbs">
-                ${images.map((img, i) => `<img src="http://localhost:3000/uploads/images/${esc(img)}" alt="thumb ${i}" class="${i===0?'active':''}" onclick="changeImg(this, 'http://localhost:3000/uploads/images/${esc(img)}')">`).join('')}
+                ${images.map((img, i) => `<img src="${API}/uploads/images/${esc(img)}" alt="thumb ${i}" class="${i===0?'active':''}" onclick="changeImg(this, '${API}/uploads/images/${esc(img)}')">`).join('')}
               </div>` : ''}
             </div>
             <div>

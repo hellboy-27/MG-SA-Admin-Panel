@@ -175,6 +175,7 @@
             <thead>
               <tr>
                 <th>ID</th>
+                <th>Imagen</th>
                 <th>Titulo</th>
                 <th>Tamano</th>
                 <th>Descargas</th>
@@ -183,9 +184,16 @@
               </tr>
             </thead>
             <tbody>
-              ${mods.map(m => `
+              ${mods.map(m => {
+                let img = '';
+                try {
+                  const imgs = typeof m.image_filename === 'string' ? JSON.parse(m.image_filename) : (m.image_filename || []);
+                  if (imgs.length) img = `${API}/uploads/images/${imgs[0]}`;
+                } catch(e) {}
+                return `
                 <tr>
                   <td>${m.id}</td>
+                  <td><img src="${img || `https://picsum.photos/seed/mod-${m.id}/60/60`}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border-color)" onerror="this.src='https://picsum.photos/seed/mod-${m.id}/60/60'"></td>
                   <td>${esc(m.title)}</td>
                   <td>${esc(m.size || 'N/A')}</td>
                   <td>${m.downloads || 0}</td>
@@ -201,8 +209,8 @@
                       <i class="fa-solid fa-trash"></i>
                     </button>
                   </td>
-                </tr>
-              `).join('')}
+                </tr>`;
+              }).join('')}
             </tbody>
           </table>
         `;
