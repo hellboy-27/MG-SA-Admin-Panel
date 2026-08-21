@@ -84,7 +84,7 @@
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:16px">
-        <button class="btn-submit" style="width:auto;padding:10px 24px" onclick="saveMod()"><i class="fa-solid fa-save" style="margin-right:4px"></i> Guardar</button>
+        <button class="btn-submit" id="modSaveBtn" style="width:auto;padding:10px 24px" onclick="saveMod()"><i class="fa-solid fa-save" style="margin-right:4px"></i> Guardar</button>
         <button class="btn-logout" onclick="hideForm()"><i class="fa-solid fa-xmark" style="margin-right:4px"></i> Cancelar</button>
       </div>
     </div>
@@ -109,6 +109,8 @@
       document.getElementById('modImages').value = '';
       document.getElementById('imgPreview').innerHTML = '';
       document.getElementById('filePreview').innerHTML = '';
+      document.getElementById('modSaveBtn').disabled = false;
+      document.getElementById('modSaveBtn').innerHTML = '<i class="fa-solid fa-save" style="margin-right:4px"></i> Guardar';
       pendingImages = [];
       if (mod && mod.image_filename) {
         try {
@@ -155,6 +157,151 @@
       ).join('');
     }
 
+    async function saveMod() {
+      const title = document.getElementById('modTitle').value.trim();
+      const description = document.getElementById('modDesc').value.trim();
+      const images = document.getElementById('modImages').files;
+      const modFile = document.getElementById('modFile').files[0];
+
+      if (!title) return showToast('El nombre es requerido', 'warning');
+
+      const isEdit = !!editingId;
+      const btn = document.getElementById('modSaveBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:4px"></i> Guardando...';
+      showLoading(isEdit ? 'Actualizando mod...' : 'Creando mod...');
+
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+
+      const existingNames = pendingImages.filter(p => !p.file).map(p => p.name);
+      if (existingNames.length) formData.append('existing_images', JSON.stringify(existingNames));
+
+      for (let i = 0; i < images.length; i++) {
+        formData.append('images', images[i]);
+      }
+      if (modFile) formData.append('mod_file', modFile);
+
+      try {
+        const token = getToken();
+        const url = isEdit ? `/api/mods/${editingId}` : '/api/mods';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(`${API}${url}`, {
+          method,
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+
+        hideLoading();
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data.error || `Error ${res.status}: ${res.statusText}`);
+        }
+
+        hideForm();
+        showToast(isEdit ? 'Mod actualizado correctamente' : 'Mod creado correctamente', 'success');
+        loadMods();
+      } catch (e) {
+        hideLoading();
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-save" style="margin-right:4px"></i> Guardar';
+        showToast('Error: ' + e.message, 'error');
+      }
+    }
+
+    async function deleteMod(id) {
+      const ok = await showConfirm('Eliminar este mod permanentemente?');
+      if (!ok) return;
+
+      showLoading('Eliminando mod...');
+      try {
+        await apiRequest(`/api/mods/${id}`, { method: 'DELETE' });
+        hideLoading();
+        showToast('Mod eliminado correctamente', 'success');
+        loadMods();
+      } catch (e) {
+        hideLoading();
+        showToast('Error: ' + e.message, 'error');
+      }
+    }
+
+    function viewMod(id) {
+      window.location.href = `mod-detail.html?id=${id}`;
+    }
+
+    async function editMod(id) {
+      try {
+        showLoading('Cargando mod...');
+        const data = await apiRequest(`/api/mods/${id}`);
+        hideLoading();
+        showForm(data.mod || data);
+      } catch(e) {
+        hideLoading();
+        showToast('Error: ' + e.message, 'error');
+      }
+    }
+
+    async function loadMods() {
+      try {
+        const data = await apiRequest('/api/mods');
+        const mods = data.mods || [];
+        if (!mods.length) {
+          document.getElementById('modsList').innerHTML = '<p style="color:var(--text-muted)">No hay mods registrados</p>';
+          return;
+        }
+        document.getElementById('modsList').innerHTML = `
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Imagen</th>
+                <th>Titulo</th>
+                <th>Tamano</th>
+                <th>Descargas</th>
+                <th>Rating</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${mods.map(m => {
+                let img = '';
+                try {
+                  const imgs = Array.isArray(m.image_filename) ? m.image_filename : (typeof m.image_filename === 'string' ? JSON.parse(m.image_filename) : []);
+                  if (imgs.length) img = `${API}/uploads/images/${imgs[0]}`;
+                } catch(e) {}
+                return `
+                <tr>
+                  <td>${m.id}</td>
+                  <td><img src="${img || `https://picsum.photos/seed/mod-${m.id}/60/60`}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border-color)" onerror="this.src='https://picsum.photos/seed/mod-${m.id}/60/60'"></td>
+                  <td>${esc(m.title)}</td>
+                  <td>${esc(m.size || 'N/A')}</td>
+                  <td>${m.downloads || 0}</td>
+                  <td>${m.rating_avg ? '★ ' + m.rating_avg.toFixed(1) : '—'} <span style="color:var(--text-muted);font-size:.75rem">(${m.rating_count || 0})</span></td>
+                  <td style="display:flex;gap:4px;flex-wrap:wrap">
+                    <button class="btn-action btn-view" title="Ver detalles" onclick="viewMod(${m.id})">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                    <button class="btn-action btn-edit" title="Editar" onclick="editMod(${m.id})">
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button class="btn-action btn-delete" title="Eliminar" onclick="deleteMod(${m.id})">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (e) {
+        document.getElementById('modsList').innerHTML = `<p style="color:var(--accent-pink)">Error: ${e.message}</p>`;
+      }
+    }
+
     (async () => {
       if (!await checkAuth()) {
         document.getElementById('authLoading').classList.remove('show');
@@ -163,19 +310,15 @@
       document.getElementById('authLoading').classList.remove('show');
       document.getElementById('app').classList.add('visible');
 
-      // Prevent back navigation to login while authenticated
       history.pushState({ page: 'mods' }, '', location.href);
-      window.addEventListener('popstate', (e) => {
+      window.addEventListener('popstate', () => {
         history.pushState({ page: 'mods' }, '', location.href);
       });
 
-      // Re-validate on bfcache restore
       window.addEventListener('pageshow', (e) => {
         if (e.persisted) {
           checkAuth().then(valid => {
-            if (!valid) {
-              document.getElementById('authLoading').classList.remove('show');
-            }
+            if (!valid) document.getElementById('authLoading').classList.remove('show');
           });
         }
       });
@@ -188,142 +331,6 @@
           el.innerHTML = '';
         }
       });
-
-      async function loadMods() {
-        try {
-          const data = await apiRequest('/api/mods');
-          const mods = data.mods || [];
-          if (!mods.length) {
-            document.getElementById('modsList').innerHTML = '<p style="color:var(--text-muted)">No hay mods registrados</p>';
-            return;
-          }
-          document.getElementById('modsList').innerHTML = `
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Imagen</th>
-                  <th>Titulo</th>
-                  <th>Tamano</th>
-                  <th>Descargas</th>
-                  <th>Rating</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${mods.map(m => {
-                  let img = '';
-                  try {
-                    const imgs = Array.isArray(m.image_filename) ? m.image_filename : (typeof m.image_filename === 'string' ? JSON.parse(m.image_filename) : []);
-                    if (imgs.length) img = `${API}/uploads/images/${imgs[0]}`;
-                  } catch(e) {}
-                  return `
-                  <tr>
-                    <td>${m.id}</td>
-                    <td><img src="${img || `https://picsum.photos/seed/mod-${m.id}/60/60`}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border-color)" onerror="this.src='https://picsum.photos/seed/mod-${m.id}/60/60'"></td>
-                    <td>${esc(m.title)}</td>
-                    <td>${esc(m.size || 'N/A')}</td>
-                    <td>${m.downloads || 0}</td>
-                    <td>${m.rating_avg ? '★ ' + m.rating_avg.toFixed(1) : '—'} <span style="color:var(--text-muted);font-size:.75rem">(${m.rating_count || 0})</span></td>
-                    <td style="display:flex;gap:4px;flex-wrap:wrap">
-                      <button class="btn-action btn-view" title="Ver detalles" onclick="viewMod(${m.id})">
-                        <i class="fa-solid fa-eye"></i>
-                      </button>
-                      <button class="btn-action btn-edit" title="Editar" onclick="editMod(${m.id})">
-                        <i class="fa-solid fa-pen"></i>
-                      </button>
-                      <button class="btn-action btn-delete" title="Eliminar" onclick="deleteMod(${m.id})">
-                        <i class="fa-solid fa-trash"></i>
-                      </button>
-                    </td>
-                  </tr>`;
-                }).join('')}
-              </tbody>
-            </table>
-          `;
-        } catch (e) {
-          document.getElementById('modsList').innerHTML = '<p style="color:var(--accent-pink)">Error cargando mods</p>';
-        }
-      }
-
-      function viewMod(id) {
-        window.location.href = `mod-detail.html?id=${id}`;
-      }
-
-      async function editMod(id) {
-        try {
-          showLoading('Cargando mod...');
-          const data = await apiRequest(`/api/mods/${id}`);
-          hideLoading();
-          showForm(data.mod || data);
-        } catch(e) {
-          hideLoading();
-          showToast('Error cargando mod', 'error');
-        }
-      }
-
-      async function saveMod() {
-        const title = document.getElementById('modTitle').value.trim();
-        const description = document.getElementById('modDesc').value.trim();
-        const images = document.getElementById('modImages').files;
-        const modFile = document.getElementById('modFile').files[0];
-
-        if (!title) return showToast('El nombre es requerido', 'warning');
-
-        const isEdit = !!editingId;
-        showLoading(isEdit ? 'Actualizando mod...' : 'Creando mod...');
-
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('description', description);
-
-        const existingNames = pendingImages.filter(p => !p.file).map(p => p.name);
-        if (existingNames.length) formData.append('existing_images', JSON.stringify(existingNames));
-
-        for (let i = 0; i < images.length; i++) {
-          formData.append('images', images[i]);
-        }
-        if (modFile) formData.append('mod_file', modFile);
-
-        try {
-          const token = getToken();
-          const url = isEdit ? `/api/mods/${editingId}` : '/api/mods';
-          const method = isEdit ? 'PUT' : 'POST';
-
-          const res = await fetch(`${API}${url}`, {
-            method,
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
-          });
-
-          hideLoading();
-
-          if (!res.ok) throw new Error('Failed');
-
-          hideForm();
-          showToast(isEdit ? 'Mod actualizado correctamente' : 'Mod creado correctamente', 'success');
-          loadMods();
-        } catch (e) {
-          hideLoading();
-          showToast('Error guardando mod', 'error');
-        }
-      }
-
-      async function deleteMod(id) {
-        const ok = await showConfirm('Eliminar este mod permanentemente?');
-        if (!ok) return;
-
-        showLoading('Eliminando mod...');
-        try {
-          await apiRequest(`/api/mods/${id}`, { method: 'DELETE' });
-          hideLoading();
-          showToast('Mod eliminado correctamente', 'success');
-          loadMods();
-        } catch (e) {
-          hideLoading();
-          showToast('Error eliminando mod', 'error');
-        }
-      }
 
       loadMods();
     })();
