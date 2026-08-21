@@ -130,6 +130,19 @@
       history.pushState({ page: 'login' }, '', location.href);
     });
 
+    // Handle bfcache restore - clear stale verification state
+    window.addEventListener('pageshow', (e) => {
+      console.log('[DEBUG INDEX] pageshow fired, persisted:', e.persisted);
+      if (e.persisted) {
+        console.log('[DEBUG INDEX] Page restored from bfcache - clearing stale verification state');
+        sessionStorage.removeItem('pendingLoginEmail');
+        sessionStorage.removeItem('adminToken');
+        sessionStorage.removeItem('adminUser');
+        // Re-add pushState after bfcache restore
+        history.pushState({ page: 'login' }, '', location.href);
+      }
+    });
+
     function togglePass(inputId, btn) {
       const inp = document.getElementById(inputId);
       const icon = btn.querySelector('i');
