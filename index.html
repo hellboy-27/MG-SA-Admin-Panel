@@ -131,14 +131,32 @@
       sessionStorage.removeItem('adminLoginLocked');
     }
 
-    // Handle bfcache restore - always clear stale state
+    // Handle bfcache restore - always clear stale state and reset form
     window.addEventListener('pageshow', (e) => {
       console.log('[DEBUG INDEX] pageshow fired, persisted:', e.persisted);
       if (e.persisted) {
-        console.log('[DEBUG INDEX] bfcache restore -> CLEARING stale state');
+        console.log('[DEBUG INDEX] bfcache restore -> CLEARING + RESETTING form');
         sessionStorage.removeItem('pendingLoginEmail');
         sessionStorage.removeItem('adminToken');
         sessionStorage.removeItem('adminUser');
+        // Reset form inputs and button states
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPass').value = '';
+        document.getElementById('loginBtn').disabled = false;
+        document.getElementById('forgotEmail').value = '';
+        document.getElementById('forgotBtn').disabled = false;
+        document.getElementById('resetCode').value = '';
+        document.getElementById('resetPass').value = '';
+        document.getElementById('resetBtn').disabled = false;
+        // Reset to login form and clear errors
+        ['loginForm','loginVerifyForm','forgotForm','resetForm'].forEach(id => {
+          document.getElementById(id).style.display = 'none';
+        });
+        document.getElementById('loginForm').style.display = 'block';
+        document.querySelectorAll('.auth-error').forEach(el => el.classList.remove('show'));
+        // Reset password inputs to password type
+        document.getElementById('loginPass').type = 'password';
+        document.getElementById('resetPass').type = 'password';
       }
     });
 
