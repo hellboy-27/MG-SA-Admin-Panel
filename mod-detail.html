@@ -92,18 +92,33 @@
   <script src="utils.js"></script>
   <script src="app.js"></script>
   <script>
+    console.log('[DEBUG MOD-DETAIL] === SCRIPT START ===');
+    console.log('[DEBUG MOD-DETAIL] sessionStorage:', {
+      adminToken: !!sessionStorage.getItem('adminToken'),
+      adminUser: !!sessionStorage.getItem('adminUser')
+    });
+    console.log('[DEBUG MOD-DETAIL] document.referrer:', document.referrer);
+    console.log('[DEBUG MOD-DETAIL] performance.navigation.type:', performance.navigation?.type);
+
     (async () => {
+      console.log('[DEBUG MOD-DETAIL] Calling checkAuth()...');
       if (!await checkAuth()) {
+        console.log('[DEBUG MOD-DETAIL] checkAuth() returned false');
         document.getElementById('authLoading').classList.remove('show');
         return;
       }
+      console.log('[DEBUG MOD-DETAIL] checkAuth() returned true - showing app');
       document.getElementById('authLoading').classList.remove('show');
       document.getElementById('app').classList.add('visible');
 
       // Re-validate on bfcache restore
+      console.log('[DEBUG MOD-DETAIL] Adding pageshow listener');
       window.addEventListener('pageshow', (e) => {
+        console.log('[DEBUG MOD-DETAIL] pageshow fired, persisted:', e.persisted);
         if (e.persisted) {
+          console.log('[DEBUG MOD-DETAIL] Page restored from bfcache - re-validating...');
           checkAuth().then(valid => {
+            console.log('[DEBUG MOD-DETAIL] pageshow checkAuth result:', valid);
             if (!valid) {
               document.getElementById('authLoading').classList.remove('show');
             }
