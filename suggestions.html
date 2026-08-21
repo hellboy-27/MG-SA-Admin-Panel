@@ -80,94 +80,96 @@
   <script src="utils.js"></script>
   <script src="app.js"></script>
   <script>
-    if (!checkAuth()) throw new Error('Not authenticated');
+    (async () => {
+      if (!await checkAuth()) throw new Error('Not authenticated');
 
-    let allSuggestions = [];
-    let currentFilter = 'new';
+      let allSuggestions = [];
+      let currentFilter = 'new';
 
-    async function loadSuggestions() {
-      showLoading('Cargando sugerencias...');
-      try {
-        const data = await apiRequest('/api/suggestions');
-        hideLoading();
-        allSuggestions = data.suggestions || [];
-        updateBadges();
-        renderSuggestions();
-      } catch (e) {
-        hideLoading();
-        showToast('Error al cargar sugerencias', 'error');
+      async function loadSuggestions() {
+        showLoading('Cargando sugerencias...');
+        try {
+          const data = await apiRequest('/api/suggestions');
+          hideLoading();
+          allSuggestions = data.suggestions || [];
+          updateBadges();
+          renderSuggestions();
+        } catch (e) {
+          hideLoading();
+          showToast('Error al cargar sugerencias', 'error');
+        }
       }
-    }
 
-    function updateBadges() {
-      document.getElementById('badgeNew').textContent = allSuggestions.filter(s => s.status === 'new').length;
-      document.getElementById('badgeRead').textContent = allSuggestions.filter(s => s.status === 'read').length;
-      document.getElementById('badgeAll').textContent = allSuggestions.length;
-    }
-
-    function renderSuggestions() {
-      const filtered = currentFilter === 'all' ? allSuggestions : allSuggestions.filter(s => s.status === currentFilter);
-      if (!filtered.length) {
-        document.getElementById('suggestionsList').innerHTML = '<p style="color:var(--text-muted)">No hay sugerencias</p>';
-        return;
+      function updateBadges() {
+        document.getElementById('badgeNew').textContent = allSuggestions.filter(s => s.status === 'new').length;
+        document.getElementById('badgeRead').textContent = allSuggestions.filter(s => s.status === 'read').length;
+        document.getElementById('badgeAll').textContent = allSuggestions.length;
       }
-      document.getElementById('suggestionsList').innerHTML = filtered.map(s => {
-        const date = new Date(s.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        const isUnread = s.status === 'new';
-        return `<div class="sug-card${isUnread ? ' unread' : ''}">
-          <div class="sug-header">
-            <div class="sug-avatar">${(s.username || 'U')[0].toUpperCase()}</div>
-            <div class="sug-meta">
-              <div class="sug-name">${esc(s.username)}</div>
-              <div class="sug-date">${date}</div>
+
+      function renderSuggestions() {
+        const filtered = currentFilter === 'all' ? allSuggestions : allSuggestions.filter(s => s.status === currentFilter);
+        if (!filtered.length) {
+          document.getElementById('suggestionsList').innerHTML = '<p style="color:var(--text-muted)">No hay sugerencias</p>';
+          return;
+        }
+        document.getElementById('suggestionsList').innerHTML = filtered.map(s => {
+          const date = new Date(s.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+          const isUnread = s.status === 'new';
+          return `<div class="sug-card${isUnread ? ' unread' : ''}">
+            <div class="sug-header">
+              <div class="sug-avatar">${(s.username || 'U')[0].toUpperCase()}</div>
+              <div class="sug-meta">
+                <div class="sug-name">${esc(s.username)}</div>
+                <div class="sug-date">${date}</div>
+              </div>
+              <span class="sug-status ${isUnread ? 'new' : 'read'}">${isUnread ? 'Nueva' : 'Leida'}</span>
             </div>
-            <span class="sug-status ${isUnread ? 'new' : 'read'}">${isUnread ? 'Nueva' : 'Leida'}</span>
-          </div>
-          <div class="sug-message">${esc(s.message)}</div>
-          <div class="sug-actions">
-            ${isUnread ? `<button class="btn-read" onclick="markRead(${s.id})"><i class="fa-solid fa-check"></i> Marcar leida</button>` : ''}
-            <button class="btn-delete" onclick="deleteSuggestion(${s.id})"><i class="fa-solid fa-trash"></i> Eliminar</button>
-          </div>
-        </div>`;
-      }).join('');
-    }
-
-    function filterSuggestions(filter, btn) {
-      currentFilter = filter;
-      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
-      renderSuggestions();
-    }
-
-    async function markRead(id) {
-      showLoading('Marcando como leida...');
-      try {
-        await apiRequest(`/api/suggestions/${id}/read`, { method: 'POST' });
-        hideLoading();
-        showToast('Sugerencia marcada como leida', 'success');
-        loadSuggestions();
-      } catch (e) {
-        hideLoading();
-        showToast('Error al marcar como leida', 'error');
+            <div class="sug-message">${esc(s.message)}</div>
+            <div class="sug-actions">
+              ${isUnread ? `<button class="btn-read" onclick="markRead(${s.id})"><i class="fa-solid fa-check"></i> Marcar leida</button>` : ''}
+              <button class="btn-delete" onclick="deleteSuggestion(${s.id})"><i class="fa-solid fa-trash"></i> Eliminar</button>
+            </div>
+          </div>`;
+        }).join('');
       }
-    }
 
-    async function deleteSuggestion(id) {
-      const ok = await showConfirm('Eliminar sugerencia?');
-      if (!ok) return;
-      showLoading('Eliminando sugerencia...');
-      try {
-        await apiRequest(`/api/suggestions/${id}`, { method: 'DELETE' });
-        hideLoading();
-        showToast('Sugerencia eliminada', 'success');
-        loadSuggestions();
-      } catch (e) {
-        hideLoading();
-        showToast('Error al eliminar sugerencia', 'error');
+      function filterSuggestions(filter, btn) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        renderSuggestions();
       }
-    }
 
-    loadSuggestions();
+      async function markRead(id) {
+        showLoading('Marcando como leida...');
+        try {
+          await apiRequest(`/api/suggestions/${id}/read`, { method: 'POST' });
+          hideLoading();
+          showToast('Sugerencia marcada como leida', 'success');
+          loadSuggestions();
+        } catch (e) {
+          hideLoading();
+          showToast('Error al marcar como leida', 'error');
+        }
+      }
+
+      async function deleteSuggestion(id) {
+        const ok = await showConfirm('Eliminar sugerencia?');
+        if (!ok) return;
+        showLoading('Eliminando sugerencia...');
+        try {
+          await apiRequest(`/api/suggestions/${id}`, { method: 'DELETE' });
+          hideLoading();
+          showToast('Sugerencia eliminada', 'success');
+          loadSuggestions();
+        } catch (e) {
+          hideLoading();
+          showToast('Error al eliminar sugerencia', 'error');
+        }
+      }
+
+      loadSuggestions();
+    })();
   </script>
 </body>
 </html>

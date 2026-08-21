@@ -86,126 +86,128 @@
   <script src="utils.js"></script>
   <script src="app.js"></script>
   <script>
-    if (!checkAuth()) throw new Error('Not authenticated');
+    (async () => {
+      if (!await checkAuth()) throw new Error('Not authenticated');
 
-    const params = new URLSearchParams(window.location.search);
-    const modId = params.get('id');
+      const params = new URLSearchParams(window.location.search);
+      const modId = params.get('id');
 
-    if (!modId) {
-      document.getElementById('modDetail').innerHTML = '<p style="color:var(--accent-pink)">Mod no encontrado</p>';
-    } else {
-      loadDetail(modId);
-    }
+      if (!modId) {
+        document.getElementById('modDetail').innerHTML = '<p style="color:var(--accent-pink)">Mod no encontrado</p>';
+      } else {
+        loadDetail(modId);
+      }
 
-    async function loadDetail(id) {
-      const container = document.getElementById('modDetail');
-      try {
-        const data = await apiRequest(`/api/mods/${id}`);
-        const mod = data.mod || data;
+      async function loadDetail(id) {
+        const container = document.getElementById('modDetail');
+        try {
+          const data = await apiRequest(`/api/mods/${id}`);
+          const mod = data.mod || data;
 
-        let images = [];
-        if (mod.image_filename) {
-          try {
-            images = typeof mod.image_filename === 'string' ? JSON.parse(mod.image_filename) : mod.image_filename;
-          } catch(e) {}
-        }
+          let images = [];
+          if (mod.image_filename) {
+            try {
+              images = typeof mod.image_filename === 'string' ? JSON.parse(mod.image_filename) : mod.image_filename;
+            } catch(e) {}
+          }
 
-        const ratings = mod.ratings || mod.reviews || [];
-        const comments = mod.comments || [];
-        const ratingAvg = mod.rating_avg || 0;
-        const ratingCount = mod.rating_count || 0;
-        const stars = [5,4,3,2,1];
+          const ratings = mod.ratings || mod.reviews || [];
+          const comments = mod.comments || [];
+          const ratingAvg = mod.rating_avg || 0;
+          const ratingCount = mod.rating_count || 0;
+          const stars = [5,4,3,2,1];
 
-        const mainImg = images.length
-          ? `${API}/uploads/images/${images[0]}`
-          : `https://picsum.photos/seed/mod-${mod.id}/800/400`;
+          const mainImg = images.length
+            ? `${API}/uploads/images/${images[0]}`
+            : `https://picsum.photos/seed/mod-${mod.id}/800/400`;
 
-        container.innerHTML = `
-          <div class="detail-hero">
-            <div>
-              <img class="detail-main-img" id="mainImg" src="${mainImg}" alt="${esc(mod.title)}" onerror="this.src='https://picsum.photos/seed/mod-${mod.id}/800/400'">
-              ${images.length > 1 ? `
-              <div class="detail-thumbs">
-                ${images.map((img, i) => `<img src="${API}/uploads/images/${esc(img)}" alt="thumb ${i}" class="${i===0?'active':''}" onclick="changeImg(this, '${API}/uploads/images/${esc(img)}')">`).join('')}
-              </div>` : ''}
-            </div>
-            <div>
-              <div class="detail-info-grid">
-                <div class="detail-stat">
-                  <div class="stat-icon"><i class="fa-solid fa-hashtag" style="color:var(--accent-orange)"></i></div>
-                  <div class="stat-val">#${mod.id}</div>
-                  <div class="stat-lbl">ID</div>
-                </div>
-                <div class="detail-stat">
-                  <div class="stat-icon"><i class="fa-solid fa-download" style="color:var(--accent-teal)"></i></div>
-                  <div class="stat-val">${mod.downloads || 0}</div>
-                  <div class="stat-lbl">Descargas</div>
-                </div>
-                <div class="detail-stat">
-                  <div class="stat-icon"><i class="fa-solid fa-star" style="color:var(--accent-yellow)"></i></div>
-                  <div class="stat-val">${ratingAvg.toFixed(1)}</div>
-                  <div class="stat-lbl">Rating</div>
-                </div>
-                <div class="detail-stat">
-                  <div class="stat-icon"><i class="fa-solid fa-comment" style="color:var(--accent-pink)"></i></div>
-                  <div class="stat-val">${comments.length}</div>
-                  <div class="stat-lbl">Comentarios</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="detail-section">
-            <div class="detail-section-title"><i class="fa-solid fa-heading" style="margin-right:6px"></i> ${esc(mod.title)}</div>
-            <div class="detail-desc">${esc(mod.description || 'Sin descripcion')}</div>
-          </div>
-
-          ${ratingCount > 0 ? `
-          <div class="detail-section">
-            <div class="detail-section-title"><i class="fa-solid fa-star" style="margin-right:6px"></i> Valoraciones (${ratingCount})</div>
-            <div class="detail-rating-grid">
-              <div class="detail-rating-avg">
-                <div class="big-number">${ratingAvg.toFixed(1)}</div>
-                <div class="big-stars">${'★'.repeat(Math.round(ratingAvg))}${'☆'.repeat(5 - Math.round(ratingAvg))}</div>
-                <div class="total">${ratingCount} valoraciones</div>
+          container.innerHTML = `
+            <div class="detail-hero">
+              <div>
+                <img class="detail-main-img" id="mainImg" src="${mainImg}" alt="${esc(mod.title)}" onerror="this.src='https://picsum.photos/seed/mod-${mod.id}/800/400'">
+                ${images.length > 1 ? `
+                <div class="detail-thumbs">
+                  ${images.map((img, i) => `<img src="${API}/uploads/images/${esc(img)}" alt="thumb ${i}" class="${i===0?'active':''}" onclick="changeImg(this, '${API}/uploads/images/${esc(img)}')">`).join('')}
+                </div>` : ''}
               </div>
               <div>
-                ${stars.map(s => {
-                  const count = ratings.filter(r => Math.round(r.rating) === s).length;
-                  const pct = ratingCount ? Math.round((count / ratingCount) * 100) : 0;
-                  return `<div class="rating-bar"><span class="stars">${'★'.repeat(s)}${'☆'.repeat(5-s)}</span><div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div><span style="font-size:.75rem;color:var(--text-muted);min-width:30px;text-align:right">${count} (${pct}%)</span></div>`;
-                }).join('')}
-              </div>
-            </div>
-          </div>` : ''}
-
-          ${comments.length > 0 ? `
-          <div class="detail-section">
-            <div class="detail-section-title"><i class="fa-solid fa-comments" style="margin-right:6px"></i> Comentarios (${comments.length})</div>
-            ${comments.map(c => `
-            <div class="detail-comment">
-              <div class="detail-comment-avatar">${(c.username || c.user_name || 'U').charAt(0).toUpperCase()}</div>
-              <div class="detail-comment-body">
-                <div class="detail-comment-head">
-                  <span class="detail-comment-user">${esc(c.username || c.user_name || 'Anon')}</span>
-                  <span class="detail-comment-date">${new Date(c.created_at).toLocaleDateString('es', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
+                <div class="detail-info-grid">
+                  <div class="detail-stat">
+                    <div class="stat-icon"><i class="fa-solid fa-hashtag" style="color:var(--accent-orange)"></i></div>
+                    <div class="stat-val">#${mod.id}</div>
+                    <div class="stat-lbl">ID</div>
+                  </div>
+                  <div class="detail-stat">
+                    <div class="stat-icon"><i class="fa-solid fa-download" style="color:var(--accent-teal)"></i></div>
+                    <div class="stat-val">${mod.downloads || 0}</div>
+                    <div class="stat-lbl">Descargas</div>
+                  </div>
+                  <div class="detail-stat">
+                    <div class="stat-icon"><i class="fa-solid fa-star" style="color:var(--accent-yellow)"></i></div>
+                    <div class="stat-val">${ratingAvg.toFixed(1)}</div>
+                    <div class="stat-lbl">Rating</div>
+                  </div>
+                  <div class="detail-stat">
+                    <div class="stat-icon"><i class="fa-solid fa-comment" style="color:var(--accent-pink)"></i></div>
+                    <div class="stat-val">${comments.length}</div>
+                    <div class="stat-lbl">Comentarios</div>
+                  </div>
                 </div>
-                <div class="detail-comment-text">${esc(c.comment || c.text || '')}</div>
               </div>
             </div>
-            `).join('')}
-          </div>` : ''}
-        `;
-      } catch(e) {
-        container.innerHTML = '<p style="color:var(--accent-pink)">Error cargando detalles del mod</p>';
-      }
-    }
 
-    function changeImg(el, src) {
-      document.getElementById('mainImg').src = src;
-      document.querySelectorAll('.detail-thumbs img').forEach(i => i.classList.remove('active'));
-      el.classList.add('active');
-    }
+            <div class="detail-section">
+              <div class="detail-section-title"><i class="fa-solid fa-heading" style="margin-right:6px"></i> ${esc(mod.title)}</div>
+              <div class="detail-desc">${esc(mod.description || 'Sin descripcion')}</div>
+            </div>
+
+            ${ratingCount > 0 ? `
+            <div class="detail-section">
+              <div class="detail-section-title"><i class="fa-solid fa-star" style="margin-right:6px"></i> Valoraciones (${ratingCount})</div>
+              <div class="detail-rating-grid">
+                <div class="detail-rating-avg">
+                  <div class="big-number">${ratingAvg.toFixed(1)}</div>
+                  <div class="big-stars">${'★'.repeat(Math.round(ratingAvg))}${'☆'.repeat(5 - Math.round(ratingAvg))}</div>
+                  <div class="total">${ratingCount} valoraciones</div>
+                </div>
+                <div>
+                  ${stars.map(s => {
+                    const count = ratings.filter(r => Math.round(r.rating) === s).length;
+                    const pct = ratingCount ? Math.round((count / ratingCount) * 100) : 0;
+                    return `<div class="rating-bar"><span class="stars">${'★'.repeat(s)}${'☆'.repeat(5-s)}</span><div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div><span style="font-size:.75rem;color:var(--text-muted);min-width:30px;text-align:right">${count} (${pct}%)</span></div>`;
+                  }).join('')}
+                </div>
+              </div>
+            </div>` : ''}
+
+            ${comments.length > 0 ? `
+            <div class="detail-section">
+              <div class="detail-section-title"><i class="fa-solid fa-comments" style="margin-right:6px"></i> Comentarios (${comments.length})</div>
+              ${comments.map(c => `
+              <div class="detail-comment">
+                <div class="detail-comment-avatar">${(c.username || c.user_name || 'U').charAt(0).toUpperCase()}</div>
+                <div class="detail-comment-body">
+                  <div class="detail-comment-head">
+                    <span class="detail-comment-user">${esc(c.username || c.user_name || 'Anon')}</span>
+                    <span class="detail-comment-date">${new Date(c.created_at).toLocaleDateString('es', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
+                  </div>
+                  <div class="detail-comment-text">${esc(c.comment || c.text || '')}</div>
+                </div>
+              </div>
+              `).join('')}
+            </div>` : ''}
+          `;
+        } catch(e) {
+          container.innerHTML = '<p style="color:var(--accent-pink)">Error cargando detalles del mod</p>';
+        }
+      }
+
+      function changeImg(el, src) {
+        document.getElementById('mainImg').src = src;
+        document.querySelectorAll('.detail-thumbs img').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
+      }
+    })();
   </script>
 </body>
 </html>

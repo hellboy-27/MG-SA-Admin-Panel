@@ -12,22 +12,43 @@ function getUser() {
   }
 }
 
-function checkAuth() {
+function logout() {
+  sessionStorage.removeItem('adminToken');
+  sessionStorage.removeItem('adminUser');
+  sessionStorage.removeItem('pendingLoginEmail');
+  window.location.href = 'index.html';
+}
+
+async function checkAuth() {
   const user = getUser();
   const token = getToken();
   if (!user || !token || user.role !== 'admin') {
     window.location.href = 'index.html';
     return false;
   }
+
+  // Validate token server-side
+  try {
+    const res = await fetch(`${API}/api/auth/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      logout();
+      return false;
+    }
+    const data = await res.json();
+    if (!data.user || data.user.role !== 'admin') {
+      logout();
+      return false;
+    }
+  } catch {
+    logout();
+    return false;
+  }
+
   document.getElementById('userName').textContent = user.username;
   document.getElementById('userAvatar').textContent = user.username[0].toUpperCase();
   return true;
-}
-
-function logout() {
-  sessionStorage.removeItem('adminToken');
-  sessionStorage.removeItem('adminUser');
-  window.location.href = 'index.html';
 }
 
 async function apiRequest(endpoint, options = {}) {

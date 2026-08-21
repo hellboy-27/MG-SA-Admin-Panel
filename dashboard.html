@@ -72,28 +72,30 @@
   <script src="utils.js"></script>
   <script src="app.js"></script>
   <script>
-    if (!checkAuth()) throw new Error('Not authenticated');
+    (async () => {
+      if (!await checkAuth()) throw new Error('Not authenticated');
 
-    async function loadStats() {
-      try {
-        const [mods, users, suggestions] = await Promise.all([
-          apiRequest('/api/mods'),
-          apiRequest('/api/users'),
-          apiRequest('/api/suggestions')
-        ]);
+      async function loadStats() {
+        try {
+          const [mods, users, suggestions] = await Promise.all([
+            apiRequest('/api/mods'),
+            apiRequest('/api/users'),
+            apiRequest('/api/suggestions')
+          ]);
 
-        document.getElementById('totalMods').textContent = mods.mods?.length || 0;
-        document.getElementById('totalUsers').textContent = users.users?.length || 0;
-        document.getElementById('totalSuggestions').textContent = suggestions.suggestions?.length || 0;
+          document.getElementById('totalMods').textContent = mods.mods?.length || 0;
+          document.getElementById('totalUsers').textContent = users.users?.length || 0;
+          document.getElementById('totalSuggestions').textContent = suggestions.suggestions?.length || 0;
 
-        const totalDownloads = (mods.mods || []).reduce((sum, m) => sum + (m.downloads || 0), 0);
-        document.getElementById('totalDownloads').textContent = totalDownloads;
-      } catch (e) {
-        console.error('Failed to load stats:', e);
+          const totalDownloads = (mods.mods || []).reduce((sum, m) => sum + (m.downloads || 0), 0);
+          document.getElementById('totalDownloads').textContent = totalDownloads;
+        } catch (e) {
+          console.error('Failed to load stats:', e);
+        }
       }
-    }
 
-    loadStats();
+      loadStats();
+    })();
   </script>
 </body>
 </html>

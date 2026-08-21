@@ -51,75 +51,77 @@
   <script src="utils.js"></script>
   <script src="app.js"></script>
   <script>
-    if (!checkAuth()) throw new Error('Not authenticated');
+    (async () => {
+      if (!await checkAuth()) throw new Error('Not authenticated');
 
-    async function loadComments() {
-      try {
-        const modsData = await apiRequest('/api/mods');
-        const mods = modsData.mods || [];
-        let allComments = [];
+      async function loadComments() {
+        try {
+          const modsData = await apiRequest('/api/mods');
+          const mods = modsData.mods || [];
+          let allComments = [];
 
-        for (const mod of mods) {
-          const commentsData = await apiRequest(`/api/mods/${mod.id}/comments`);
-          (commentsData.comments || []).forEach(c => {
-            allComments.push({ ...c, modTitle: mod.title, modId: mod.id });
-          });
-        }
+          for (const mod of mods) {
+            const commentsData = await apiRequest(`/api/mods/${mod.id}/comments`);
+            (commentsData.comments || []).forEach(c => {
+              allComments.push({ ...c, modTitle: mod.title, modId: mod.id });
+            });
+          }
 
-        if (!allComments.length) {
-          document.getElementById('commentsList').innerHTML = '<p style="color:var(--text-muted)">No hay comentarios</p>';
-          return;
-        }
+          if (!allComments.length) {
+            document.getElementById('commentsList').innerHTML = '<p style="color:var(--text-muted)">No hay comentarios</p>';
+            return;
+          }
 
-        document.getElementById('commentsList').innerHTML = `
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th>Comentario</th>
-                <th>Mod</th>
-                <th>Fecha</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${allComments.map(c => `
+          document.getElementById('commentsList').innerHTML = `
+            <table class="data-table">
+              <thead>
                 <tr>
-                  <td>${esc(c.username)}</td>
-                  <td>${esc(c.content)}</td>
-                  <td>${esc(c.modTitle)}</td>
-                  <td>${new Date(c.created_at).toLocaleDateString('es-ES')}</td>
-                  <td>
-                    <button class="btn-logout" style="padding:4px 8px;font-size:.75rem" onclick="deleteComment(${c.modId},${c.id})">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
-                  </td>
+                  <th>Usuario</th>
+                  <th>Comentario</th>
+                  <th>Mod</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
                 </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-      } catch (e) {
-        document.getElementById('commentsList').innerHTML = '<p style="color:var(--accent-pink)">Error loading</p>';
+              </thead>
+              <tbody>
+                ${allComments.map(c => `
+                  <tr>
+                    <td>${esc(c.username)}</td>
+                    <td>${esc(c.content)}</td>
+                    <td>${esc(c.modTitle)}</td>
+                    <td>${new Date(c.created_at).toLocaleDateString('es-ES')}</td>
+                    <td>
+                      <button class="btn-logout" style="padding:4px 8px;font-size:.75rem" onclick="deleteComment(${c.modId},${c.id})">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `;
+        } catch (e) {
+          document.getElementById('commentsList').innerHTML = '<p style="color:var(--accent-pink)">Error loading</p>';
+        }
       }
-    }
 
-    async function deleteComment(modId, commentId) {
-      const ok = await showConfirm('¿Eliminar comentario?');
-      if (!ok) return;
-      try {
-        showLoading('Eliminando comentario...');
-        await apiRequest(`/api/mods/${modId}/comments/${commentId}`, { method: 'DELETE' });
-        showToast('Comentario eliminado', 'success');
-        loadComments();
-      } catch (e) {
-        showToast('Error al eliminar el comentario', 'error');
-      } finally {
-        hideLoading();
+      async function deleteComment(modId, commentId) {
+        const ok = await showConfirm('¿Eliminar comentario?');
+        if (!ok) return;
+        try {
+          showLoading('Eliminando comentario...');
+          await apiRequest(`/api/mods/${modId}/comments/${commentId}`, { method: 'DELETE' });
+          showToast('Comentario eliminado', 'success');
+          loadComments();
+        } catch (e) {
+          showToast('Error al eliminar el comentario', 'error');
+        } finally {
+          hideLoading();
+        }
       }
-    }
 
-    loadComments();
+      loadComments();
+    })();
   </script>
 </body>
 </html>
