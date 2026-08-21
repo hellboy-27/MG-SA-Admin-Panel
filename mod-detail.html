@@ -100,6 +100,17 @@
       document.getElementById('authLoading').classList.remove('show');
       document.getElementById('app').classList.add('visible');
 
+      // Re-validate on bfcache restore
+      window.addEventListener('pageshow', (e) => {
+        if (e.persisted) {
+          checkAuth().then(valid => {
+            if (!valid) {
+              document.getElementById('authLoading').classList.remove('show');
+            }
+          });
+        }
+      });
+
       const params = new URLSearchParams(window.location.search);
       const modId = params.get('id');
 

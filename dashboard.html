@@ -86,6 +86,17 @@
       document.getElementById('authLoading').classList.remove('show');
       document.getElementById('app').classList.add('visible');
 
+      // Re-validate on bfcache restore
+      window.addEventListener('pageshow', (e) => {
+        if (e.persisted) {
+          checkAuth().then(valid => {
+            if (!valid) {
+              document.getElementById('authLoading').classList.remove('show');
+            }
+          });
+        }
+      });
+
       async function loadStats() {
         try {
           const [mods, users, suggestions] = await Promise.all([
