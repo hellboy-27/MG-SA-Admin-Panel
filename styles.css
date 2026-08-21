@@ -399,9 +399,16 @@ a:hover { color: var(--accent-yellow); }
   padding: 28px 24px;
   width: 100%;
   max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: var(--shadow);
   animation: modalIn 0.25s ease;
 }
+
+.modal-card::-webkit-scrollbar { width: 6px; }
+.modal-card::-webkit-scrollbar-track { background: transparent; }
+.modal-card::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+.modal-card::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 @keyframes modalIn {
   from { opacity: 0; transform: translateY(20px) scale(0.95); }
