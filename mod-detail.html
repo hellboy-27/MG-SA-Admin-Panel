@@ -111,6 +111,14 @@
       document.getElementById('authLoading').classList.remove('show');
       document.getElementById('app').classList.add('visible');
 
+      // Prevent back navigation to login while authenticated
+      console.log('[DEBUG MOD-DETAIL] Adding pushState + popstate protection');
+      history.pushState({ page: 'mod-detail' }, '', location.href);
+      window.addEventListener('popstate', (e) => {
+        console.log('[DEBUG MOD-DETAIL] popstate fired - redirecting to mod-detail');
+        history.pushState({ page: 'mod-detail' }, '', location.href);
+      });
+
       // Re-validate on bfcache restore
       console.log('[DEBUG MOD-DETAIL] Adding pageshow listener');
       window.addEventListener('pageshow', (e) => {

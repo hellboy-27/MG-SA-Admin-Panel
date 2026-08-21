@@ -129,23 +129,14 @@
       sessionStorage.removeItem('adminLoginLocked');
     }
 
-    // Prevent back navigation from dashboard
-    console.log('[DEBUG INDEX] Adding pushState + popstate protection');
-    history.pushState({ page: 'login' }, '', location.href);
-    window.addEventListener('popstate', (e) => {
-      console.log('[DEBUG INDEX] popstate fired! state:', e.state, '| Pushing login state again');
-      history.pushState({ page: 'login' }, '', location.href);
-    });
-
     // Handle bfcache restore - always clear stale state
     window.addEventListener('pageshow', (e) => {
       console.log('[DEBUG INDEX] pageshow fired, persisted:', e.persisted);
-      if (e.persisted || !sessionStorage.getItem('adminToken')) {
-        console.log('[DEBUG INDEX] Restored/back nav -> CLEARING stale state');
+      if (e.persisted) {
+        console.log('[DEBUG INDEX] bfcache restore -> CLEARING stale state');
         sessionStorage.removeItem('pendingLoginEmail');
         sessionStorage.removeItem('adminToken');
         sessionStorage.removeItem('adminUser');
-        history.pushState({ page: 'login' }, '', location.href);
       }
     });
 

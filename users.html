@@ -76,6 +76,14 @@
       document.getElementById('authLoading').classList.remove('show');
       document.getElementById('app').classList.add('visible');
 
+      // Prevent back navigation to login while authenticated
+      console.log('[DEBUG USERS] Adding pushState + popstate protection');
+      history.pushState({ page: 'users' }, '', location.href);
+      window.addEventListener('popstate', (e) => {
+        console.log('[DEBUG USERS] popstate fired - redirecting to users');
+        history.pushState({ page: 'users' }, '', location.href);
+      });
+
       // Re-validate on bfcache restore
       console.log('[DEBUG USERS] Adding pageshow listener');
       window.addEventListener('pageshow', (e) => {
