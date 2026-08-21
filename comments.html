@@ -4,11 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src https://cdnjs.cloudflare.com; connect-src 'self' https://mg-sa-backend.onrender.com http://localhost:3000 http://127.0.0.1:3000; img-src 'self' data: blob: https://mg-sa-backend.onrender.com http://localhost:3000 http://127.0.0.1:3000;">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>MG-SA Admin - Comentarios</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
+  <div id="authLoading" class="auth-loading show"><div class="spinner"></div><p>Verifying access...</p></div>
+  <div id="app">
   <div class="layout">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
@@ -47,12 +52,18 @@
       </div>
     </div>
   </div>
+  </div>
 
   <script src="utils.js"></script>
   <script src="app.js"></script>
   <script>
     (async () => {
-      if (!await checkAuth()) throw new Error('Not authenticated');
+      if (!await checkAuth()) {
+        document.getElementById('authLoading').classList.remove('show');
+        return;
+      }
+      document.getElementById('authLoading').classList.remove('show');
+      document.getElementById('app').classList.add('visible');
 
       async function loadComments() {
         try {
