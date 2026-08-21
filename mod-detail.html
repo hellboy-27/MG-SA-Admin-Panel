@@ -230,12 +230,13 @@
         }
       }
 
-      function changeImg(el, src) {
-        document.getElementById('mainImg').src = src;
-        document.querySelectorAll('.detail-thumbs img').forEach(i => i.classList.remove('active'));
-        el.classList.add('active');
-      }
     })();
+
+    function changeImg(el, src) {
+      document.getElementById('mainImg').src = src;
+      document.querySelectorAll('.detail-thumbs img').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+    }
   </script>
 </body>
 </html>
