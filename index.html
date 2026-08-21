@@ -111,12 +111,14 @@
     const hasToken = !!sessionStorage.getItem('adminToken');
     const pendingEmail = sessionStorage.getItem('pendingLoginEmail');
 
-    // CASE 1: Already have valid token -> redirect to dashboard
+    // CASE 1: Already have valid token -> LOGOUT (user hit back from dashboard)
     if (hasToken) {
-      console.log('[DEBUG INDEX] Has token -> redirecting to dashboard');
-      window.location.href = 'dashboard.html';
+      console.log('[DEBUG INDEX] Has token on login page -> LOGGING OUT');
+      sessionStorage.removeItem('adminToken');
+      sessionStorage.removeItem('adminUser');
+      sessionStorage.removeItem('pendingLoginEmail');
     }
-    // CASE 2: Has pendingEmail but NO token -> stale state (bfcache/back navigation) -> CLEAR
+    // CASE 2: Has pendingEmail but NO token -> stale state -> CLEAR
     else if (pendingEmail) {
       console.log('[DEBUG INDEX] Stale pendingLoginEmail without token -> CLEARING');
       sessionStorage.removeItem('pendingLoginEmail');
