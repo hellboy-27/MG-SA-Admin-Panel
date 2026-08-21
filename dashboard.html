@@ -78,41 +78,24 @@
   <script src="utils.js"></script>
   <script src="app.js"></script>
   <script>
-    console.log('[DEBUG DASHBOARD] === SCRIPT START ===');
-    console.log('[DEBUG DASHBOARD] sessionStorage:', {
-      adminToken: !!sessionStorage.getItem('adminToken'),
-      adminUser: !!sessionStorage.getItem('adminUser')
-    });
-    console.log('[DEBUG DASHBOARD] document.referrer:', document.referrer);
-    console.log('[DEBUG DASHBOARD] performance.navigation.type:', performance.navigation?.type);
-
     (async () => {
-      console.log('[DEBUG DASHBOARD] Calling checkAuth()...');
       if (!await checkAuth()) {
-        console.log('[DEBUG DASHBOARD] checkAuth() returned false');
         document.getElementById('authLoading').classList.remove('show');
         return;
       }
-      console.log('[DEBUG DASHBOARD] checkAuth() returned true - showing app');
       document.getElementById('authLoading').classList.remove('show');
       document.getElementById('app').classList.add('visible');
 
       // Prevent back navigation to login while authenticated
-      console.log('[DEBUG DASHBOARD] Adding pushState + popstate protection');
       history.pushState({ page: 'dashboard' }, '', location.href);
       window.addEventListener('popstate', (e) => {
-        console.log('[DEBUG DASHBOARD] popstate fired - redirecting to dashboard');
         history.pushState({ page: 'dashboard' }, '', location.href);
       });
 
       // Re-validate on bfcache restore
-      console.log('[DEBUG DASHBOARD] Adding pageshow listener');
       window.addEventListener('pageshow', (e) => {
-        console.log('[DEBUG DASHBOARD] pageshow fired, persisted:', e.persisted);
         if (e.persisted) {
-          console.log('[DEBUG DASHBOARD] Page restored from bfcache - re-validating...');
           checkAuth().then(valid => {
-            console.log('[DEBUG DASHBOARD] pageshow checkAuth result:', valid);
             if (!valid) {
               document.getElementById('authLoading').classList.remove('show');
             }
@@ -122,7 +105,6 @@
 
       async function loadStats() {
         try {
-          console.log('[DEBUG DASHBOARD] Loading stats...');
           const [mods, users, suggestions] = await Promise.all([
             apiRequest('/api/mods'),
             apiRequest('/api/users'),
@@ -136,7 +118,6 @@
           const totalDownloads = (mods.mods || []).reduce((sum, m) => sum + (m.downloads || 0), 0);
           document.getElementById('totalDownloads').textContent = totalDownloads;
         } catch (e) {
-          console.error('[DEBUG DASHBOARD] Failed to load stats:', e);
         }
       }
 

@@ -95,41 +95,24 @@
   <script src="utils.js"></script>
   <script src="app.js"></script>
   <script>
-    console.log('[DEBUG MODS] === SCRIPT START ===');
-    console.log('[DEBUG MODS] sessionStorage:', {
-      adminToken: !!sessionStorage.getItem('adminToken'),
-      adminUser: !!sessionStorage.getItem('adminUser')
-    });
-    console.log('[DEBUG MODS] document.referrer:', document.referrer);
-    console.log('[DEBUG MODS] performance.navigation.type:', performance.navigation?.type);
-
     (async () => {
-      console.log('[DEBUG MODS] Calling checkAuth()...');
       if (!await checkAuth()) {
-        console.log('[DEBUG MODS] checkAuth() returned false');
         document.getElementById('authLoading').classList.remove('show');
         return;
       }
-      console.log('[DEBUG MODS] checkAuth() returned true - showing app');
       document.getElementById('authLoading').classList.remove('show');
       document.getElementById('app').classList.add('visible');
 
       // Prevent back navigation to login while authenticated
-      console.log('[DEBUG MODS] Adding pushState + popstate protection');
       history.pushState({ page: 'mods' }, '', location.href);
       window.addEventListener('popstate', (e) => {
-        console.log('[DEBUG MODS] popstate fired - redirecting to mods');
         history.pushState({ page: 'mods' }, '', location.href);
       });
 
       // Re-validate on bfcache restore
-      console.log('[DEBUG MODS] Adding pageshow listener');
       window.addEventListener('pageshow', (e) => {
-        console.log('[DEBUG MODS] pageshow fired, persisted:', e.persisted);
         if (e.persisted) {
-          console.log('[DEBUG MODS] Page restored from bfcache - re-validating...');
           checkAuth().then(valid => {
-            console.log('[DEBUG MODS] pageshow checkAuth result:', valid);
             if (!valid) {
               document.getElementById('authLoading').classList.remove('show');
             }

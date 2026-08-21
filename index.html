@@ -97,59 +97,29 @@
     const MAX_ATTEMPTS = 5;
     const LOCKOUT_MS = 300000;
 
-    // DEBUG: Log all sessionStorage on load
-    console.log('[DEBUG INDEX] === PAGE LOAD ===');
-    console.log('[DEBUG INDEX] sessionStorage:', { 
-      adminToken: !!sessionStorage.getItem('adminToken'),
-      adminUser: !!sessionStorage.getItem('adminUser'),
-      pendingLoginEmail: sessionStorage.getItem('pendingLoginEmail'),
-      adminLoginLocked: sessionStorage.getItem('adminLoginLocked')
-    });
-    console.log('[DEBUG INDEX] document.referrer:', document.referrer);
-    console.log('[DEBUG INDEX] performance.navigation.type:', performance.navigation?.type);
-
     const hasToken = !!sessionStorage.getItem('adminToken');
     const pendingEmail = sessionStorage.getItem('pendingLoginEmail');
 
     // CASE 1: Already have valid token -> LOGOUT (user hit back from dashboard)
     if (hasToken) {
-      console.log('[DEBUG INDEX] Has token on login page -> LOGGING OUT');
       sessionStorage.removeItem('adminToken');
       sessionStorage.removeItem('adminUser');
       sessionStorage.removeItem('pendingLoginEmail');
     }
     // CASE 2: Has pendingEmail but NO token -> stale state -> CLEAR
     else if (pendingEmail) {
-      console.log('[DEBUG INDEX] Stale pendingLoginEmail without token -> CLEARING');
       sessionStorage.removeItem('pendingLoginEmail');
       sessionStorage.removeItem('adminToken');
       sessionStorage.removeItem('adminUser');
     }
     // CASE 3: Clean entry (no token, no pendingEmail) -> clear any stale lockout
     else {
-      console.log('[DEBUG INDEX] Clean entry -> clearing lockout');
       sessionStorage.removeItem('adminLoginLocked');
     }
 
     // Handle bfcache restore - always clear stale state and reset form
     window.addEventListener('pageshow', (e) => {
-      console.log('[DEBUG INDEX] pageshow fired, persisted:', e.persisted);
-      console.log('[DEBUG INDEX] pageshow sessionStorage:', {
-        adminToken: !!sessionStorage.getItem('adminToken'),
-        adminUser: !!sessionStorage.getItem('adminUser'),
-        pendingLoginEmail: sessionStorage.getItem('pendingLoginEmail')
-      });
-      console.log('[DEBUG INDEX] pageshow form state:', {
-        loginEmail: document.getElementById('loginEmail').value,
-        loginPass: document.getElementById('loginPass').value ? '***FILLED***' : 'EMPTY',
-        loginBtnDisabled: document.getElementById('loginBtn').disabled,
-        loginFormVisible: document.getElementById('loginForm').style.display,
-        loginVerifyFormVisible: document.getElementById('loginVerifyForm').style.display,
-        forgotFormVisible: document.getElementById('forgotForm').style.display,
-        resetFormVisible: document.getElementById('resetForm').style.display
-      });
       if (e.persisted) {
-        console.log('[DEBUG INDEX] bfcache restore -> CLEARING + RESETTING form');
         sessionStorage.removeItem('pendingLoginEmail');
         sessionStorage.removeItem('adminToken');
         sessionStorage.removeItem('adminUser');
@@ -171,17 +141,6 @@
         // Reset password inputs to password type
         document.getElementById('loginPass').type = 'password';
         document.getElementById('resetPass').type = 'password';
-        console.log('[DEBUG INDEX] pageshow AFTER reset form state:', {
-          loginEmail: document.getElementById('loginEmail').value || 'EMPTY',
-          loginPass: document.getElementById('loginPass').value ? '***FILLED***' : 'EMPTY',
-          loginBtnDisabled: document.getElementById('loginBtn').disabled,
-          loginFormVisible: document.getElementById('loginForm').style.display
-        });
-        console.log('[DEBUG INDEX] pageshow AFTER reset sessionStorage:', {
-          adminToken: !!sessionStorage.getItem('adminToken'),
-          adminUser: !!sessionStorage.getItem('adminUser'),
-          pendingLoginEmail: sessionStorage.getItem('pendingLoginEmail')
-        });
       }
     });
 
@@ -210,7 +169,6 @@
     }
 
     function cancelVerification() {
-      console.log('[DEBUG INDEX] cancelVerification called');
       sessionStorage.removeItem('pendingLoginEmail');
       document.getElementById('loginVerifyCode').value = '';
       // Reset login form state

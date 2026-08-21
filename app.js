@@ -13,7 +13,6 @@ function getUser() {
 }
 
 function logout() {
-  console.log('[DEBUG APP] logout() called');
   sessionStorage.removeItem('adminToken');
   sessionStorage.removeItem('adminUser');
   sessionStorage.removeItem('pendingLoginEmail');
@@ -21,43 +20,29 @@ function logout() {
 }
 
 async function checkAuth() {
-  console.log('[DEBUG APP] checkAuth() START');
   const user = getUser();
   const token = getToken();
-  console.log('[DEBUG APP] sessionStorage:', { 
-    adminToken: !!token,
-    adminUser: !!user,
-    userRole: user?.role
-  });
 
   if (!user || !token || user.role !== 'admin') {
-    console.log('[DEBUG APP] checkAuth FAIL - missing token/user/role');
     window.location.href = 'index.html';
     return false;
   }
 
   // Validate token server-side
   try {
-    console.log('[DEBUG APP] Calling /api/auth/me to validate token...');
     const res = await fetch(`${API}/api/auth/me`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    console.log('[DEBUG APP] /api/auth/me response:', res.status, res.statusText);
     if (!res.ok) {
-      console.log('[DEBUG APP] Token validation FAILED - logging out');
       logout();
       return false;
     }
     const data = await res.json();
-    console.log('[DEBUG APP] /api/auth/me data:', data);
     if (!data.user || data.user.role !== 'admin') {
-      console.log('[DEBUG APP] User not admin - logging out');
       logout();
       return false;
     }
-    console.log('[DEBUG APP] checkAuth SUCCESS - token valid');
   } catch (err) {
-    console.error('[DEBUG APP] checkAuth ERROR:', err);
     logout();
     return false;
   }
@@ -69,7 +54,6 @@ async function checkAuth() {
 
 async function apiRequest(endpoint, options = {}) {
   const token = getToken();
-  console.log('[DEBUG APP] apiRequest:', endpoint, '| token present:', !!token);
   const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
@@ -77,10 +61,8 @@ async function apiRequest(endpoint, options = {}) {
   };
 
   const res = await fetch(`${API}${endpoint}`, { ...options, headers });
-  console.log('[DEBUG APP] apiRequest response:', endpoint, res.status);
 
   if (res.status === 401 || res.status === 403) {
-    console.log('[DEBUG APP] 401/403 - logging out');
     logout();
     throw new Error('Session expired');
   }
