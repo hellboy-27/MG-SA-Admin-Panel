@@ -29,8 +29,44 @@
         <button class="btn-submit" id="loginBtn" onclick="doLogin()">SIGN IN</button>
         <div style="text-align:center;margin-top:16px">
           <a onclick="showForm('forgot')" style="color:var(--accent-orange);font-size:.82rem;cursor:pointer">Forgot password?</a>
+          <br><a onclick="showForm('register')" style="color:var(--accent-orange);font-size:.82rem;cursor:pointer">Create account</a>
         </div>
         <div id="authError" class="auth-error"></div>
+      </div>
+
+      <!-- LOGIN VERIFY FORM -->
+      <div id="loginVerifyForm" style="display:none">
+        <p style="color:var(--text-secondary);font-size:.85rem;margin-bottom:16px;text-align:center">Enter the 6-digit code sent to your email</p>
+        <div class="form-group">
+          <label>Verification Code</label>
+          <input type="text" id="loginVerifyCode" placeholder="000000" maxlength="6" style="text-align:center;font-size:1.4rem;letter-spacing:6px">
+        </div>
+        <button class="btn-submit" id="loginVerifyBtn" onclick="doLoginVerify()">VERIFY</button>
+        <div style="text-align:center;margin-top:16px">
+          <a onclick="showForm('login')" style="color:var(--accent-orange);font-size:.82rem;cursor:pointer">Back to login</a>
+        </div>
+        <div id="loginVerifyError" class="auth-error"></div>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="registerForm" style="display:none">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="regUser" placeholder="Your name">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="regEmail" placeholder="admin@example.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="regPass" placeholder="Min 6 characters" autocomplete="new-password">
+        </div>
+        <button class="btn-submit" id="regBtn" onclick="doRegister()">CREATE ACCOUNT</button>
+        <div style="text-align:center;margin-top:16px">
+          <a onclick="showForm('login')" style="color:var(--accent-orange);font-size:.82rem;cursor:pointer">Already have an account? Sign in</a>
+        </div>
+        <div id="registerError" class="auth-error"></div>
       </div>
 
       <!-- FORGOT PASSWORD FORM -->
@@ -79,9 +115,10 @@
 
     function showForm(form) {
       document.getElementById('loginForm').style.display = form === 'login' ? 'block' : 'none';
+      document.getElementById('loginVerifyForm').style.display = form === 'loginVerify' ? 'block' : 'none';
+      document.getElementById('registerForm').style.display = form === 'register' ? 'block' : 'none';
       document.getElementById('forgotForm').style.display = form === 'forgot' ? 'block' : 'none';
       document.getElementById('resetForm').style.display = form === 'reset' ? 'block' : 'none';
-      // Clear errors
       document.querySelectorAll('.auth-error').forEach(el => el.classList.remove('show'));
     }
 
@@ -118,6 +155,13 @@
         const data = await res.json();
 
         if (!res.ok) throw new Error(data.error || 'Login failed');
+
+        if (data.requiresVerification) {
+          sessionStorage.setItem('pendingLoginEmail', data.email);
+          showForm('loginVerify');
+          return;
+        }
+
         if (data.user.role !== 'admin') throw new Error('Admin access only');
 
         sessionStorage.setItem('adminToken', data.token);
@@ -132,6 +176,70 @@
       }
 
       document.getElementById('loginBtn').disabled = false;
+    }
+
+    // LOGIN VERIFY
+    async function doLoginVerify() {
+      const email = sessionStorage.getItem('pendingLoginEmail');
+      const code = document.getElementById('loginVerifyCode').value.trim();
+      if (!code || code.length !== 6) return showError('loginVerifyError', 'Enter 6-digit code');
+
+      document.getElementById('loginVerifyBtn').disabled = true;
+
+      try {
+        const res = await fetch(`${API}/api/auth/verify-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code })
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Verification failed');
+        if (data.user.role !== 'admin') throw new Error('Admin access only');
+
+        sessionStorage.removeItem('pendingLoginEmail');
+        sessionStorage.setItem('adminToken', data.token);
+        sessionStorage.setItem('adminUser', JSON.stringify(data.user));
+        window.location.href = 'dashboard.html';
+      } catch (e) {
+        showError('loginVerifyError', e.message);
+      }
+
+      document.getElementById('loginVerifyBtn').disabled = false;
+    }
+
+    // REGISTER
+    async function doRegister() {
+      const username = document.getElementById('regUser').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const pass = document.getElementById('regPass').value;
+
+      if (!username || !email || !pass) return showError('registerError', 'Fill in all fields');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('registerError', 'Invalid email');
+      if (pass.length < 6) return showError('registerError', 'Password min 6 characters');
+
+      document.getElementById('regBtn').disabled = true;
+
+      try {
+        const res = await fetch(`${API}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password: pass })
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+        sessionStorage.setItem('adminToken', data.token);
+        sessionStorage.setItem('adminUser', JSON.stringify(data.user));
+        showError('registerError', 'Account created! Only admin users can access this panel. Ask an admin to promote you.');
+        document.getElementById('authError').style.color = 'var(--accent-teal)';
+        setTimeout(() => showForm('login'), 3000);
+      } catch (e) {
+        showError('registerError', e.message);
+      }
+
+      document.getElementById('regBtn').disabled = false;
     }
 
     // FORGOT PASSWORD
@@ -199,6 +307,8 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         if (document.getElementById('loginForm').style.display !== 'none') doLogin();
+        else if (document.getElementById('loginVerifyForm').style.display !== 'none') doLoginVerify();
+        else if (document.getElementById('registerForm').style.display !== 'none') doRegister();
         else if (document.getElementById('forgotForm').style.display !== 'none') sendResetCode();
         else if (document.getElementById('resetForm').style.display !== 'none') resetPassword();
       }
