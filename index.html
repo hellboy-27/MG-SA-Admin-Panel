@@ -210,8 +210,14 @@
     }
 
     function cancelVerification() {
+      console.log('[DEBUG INDEX] cancelVerification called');
       sessionStorage.removeItem('pendingLoginEmail');
       document.getElementById('loginVerifyCode').value = '';
+      // Reset login form state
+      document.getElementById('loginEmail').value = '';
+      document.getElementById('loginPass').value = '';
+      document.getElementById('loginBtn').disabled = false;
+      document.getElementById('loginPass').type = 'password';
       showForm('login');
     }
 
@@ -252,6 +258,7 @@
         if (data.requiresVerification) {
           sessionStorage.setItem('pendingLoginEmail', data.email);
           document.getElementById('loginVerifyCode').value = '';
+          document.getElementById('loginBtn').disabled = false;
           showForm('loginVerify');
           return;
         }
