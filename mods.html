@@ -95,6 +95,66 @@
   <script src="utils.js"></script>
   <script src="app.js"></script>
   <script>
+    let editingId = null;
+    let pendingImages = [];
+
+    function showForm(mod) {
+      editingId = mod ? mod.id : null;
+      document.getElementById('formTitle').innerHTML = mod
+        ? '<i class="fa-solid fa-pen" style="color:var(--accent-yellow);margin-right:8px"></i> Editar Mod'
+        : '<i class="fa-solid fa-cube" style="color:var(--accent-orange);margin-right:8px"></i> Agregar Mod';
+      document.getElementById('modTitle').value = mod ? mod.title : '';
+      document.getElementById('modDesc').value = mod ? (mod.description || '') : '';
+      document.getElementById('modFile').value = '';
+      document.getElementById('modImages').value = '';
+      document.getElementById('imgPreview').innerHTML = '';
+      document.getElementById('filePreview').innerHTML = '';
+      pendingImages = [];
+      if (mod && mod.image_filename) {
+        try {
+          const existing = typeof mod.image_filename === 'string' ? JSON.parse(mod.image_filename) : mod.image_filename;
+          if (Array.isArray(existing)) {
+            existing.forEach(name => {
+              const url = `${API}/uploads/images/${name}`;
+              pendingImages.push({ name, url });
+            });
+            renderPreview();
+          }
+        } catch(e) {}
+      }
+      document.getElementById('addModal').classList.add('open');
+    }
+
+    function hideForm() {
+      document.getElementById('addModal').classList.remove('open');
+      editingId = null;
+      pendingImages = [];
+    }
+
+    async function previewImages(input) {
+      const files = input.files;
+      showToast('Comprimiendo imagenes...', 'info');
+      for (let i = 0; i < files.length; i++) {
+        const compressed = await compressImage(files[i]);
+        const url = URL.createObjectURL(compressed);
+        pendingImages.push({ name: compressed.name, url, file: compressed });
+      }
+      renderPreview();
+      showToast('Imagenes listas', 'success');
+    }
+
+    function removePreviewImg(idx) {
+      pendingImages.splice(idx, 1);
+      renderPreview();
+    }
+
+    function renderPreview() {
+      const container = document.getElementById('imgPreview');
+      container.innerHTML = pendingImages.map((img, i) =>
+        `<div class="img-preview-item"><img src="${img.url}"><button type="button" onclick="removePreviewImg(${i})">&times;</button></div>`
+      ).join('');
+    }
+
     (async () => {
       if (!await checkAuth()) {
         document.getElementById('authLoading').classList.remove('show');
@@ -119,69 +179,6 @@
           });
         }
       });
-
-      let editingId = null;
-      let pendingImages = [];
-
-      function showForm(mod) {
-        editingId = mod ? mod.id : null;
-        document.getElementById('formTitle').innerHTML = mod
-          ? '<i class="fa-solid fa-pen" style="color:var(--accent-yellow);margin-right:8px"></i> Editar Mod'
-          : '<i class="fa-solid fa-cube" style="color:var(--accent-orange);margin-right:8px"></i> Agregar Mod';
-        document.getElementById('modTitle').value = mod ? mod.title : '';
-        document.getElementById('modDesc').value = mod ? (mod.description || '') : '';
-        document.getElementById('modFile').value = '';
-        document.getElementById('modImages').value = '';
-        document.getElementById('imgPreview').innerHTML = '';
-        document.getElementById('filePreview').innerHTML = '';
-        pendingImages = [];
-        if (mod && mod.image_filename) {
-          try {
-            const existing = typeof mod.image_filename === 'string' ? JSON.parse(mod.image_filename) : mod.image_filename;
-            if (Array.isArray(existing)) {
-              existing.forEach(name => {
-                const url = `${API}/uploads/images/${name}`;
-                pendingImages.push({ name, url });
-              });
-              renderPreview();
-            }
-          } catch(e) {}
-        }
-        document.getElementById('addModal').classList.add('open');
-      }
-
-      function hideForm() {
-        document.getElementById('addModal').classList.remove('open');
-        editingId = null;
-        pendingImages = [];
-      }
-
-      async function previewImages(input) {
-        const files = input.files;
-        showToast('Comprimiendo imagenes...', 'info');
-        for (let i = 0; i < files.length; i++) {
-          const compressed = await compressImage(files[i]);
-          const url = URL.createObjectURL(compressed);
-          pendingImages.push({ name: compressed.name, url, file: compressed });
-        }
-        renderPreview();
-        showToast('Imagenes listas', 'success');
-      }
-
-      function removePreviewImg(idx) {
-        pendingImages.splice(idx, 1);
-        renderPreview();
-      }
-
-      function renderPreview() {
-        const container = document.getElementById('imgPreview');
-        container.innerHTML = pendingImages.map((img, i) => `
-          <div class="img-preview-item">
-            <img src="${img.url}" alt="preview">
-            <button class="remove-img" onclick="removePreviewImg(${i})">&times;</button>
-          </div>
-        `).join('');
-      }
 
       document.getElementById('modFile').addEventListener('change', function() {
         const el = document.getElementById('filePreview');
