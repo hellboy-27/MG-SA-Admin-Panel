@@ -134,6 +134,20 @@
     // Handle bfcache restore - always clear stale state and reset form
     window.addEventListener('pageshow', (e) => {
       console.log('[DEBUG INDEX] pageshow fired, persisted:', e.persisted);
+      console.log('[DEBUG INDEX] pageshow sessionStorage:', {
+        adminToken: !!sessionStorage.getItem('adminToken'),
+        adminUser: !!sessionStorage.getItem('adminUser'),
+        pendingLoginEmail: sessionStorage.getItem('pendingLoginEmail')
+      });
+      console.log('[DEBUG INDEX] pageshow form state:', {
+        loginEmail: document.getElementById('loginEmail').value,
+        loginPass: document.getElementById('loginPass').value ? '***FILLED***' : 'EMPTY',
+        loginBtnDisabled: document.getElementById('loginBtn').disabled,
+        loginFormVisible: document.getElementById('loginForm').style.display,
+        loginVerifyFormVisible: document.getElementById('loginVerifyForm').style.display,
+        forgotFormVisible: document.getElementById('forgotForm').style.display,
+        resetFormVisible: document.getElementById('resetForm').style.display
+      });
       if (e.persisted) {
         console.log('[DEBUG INDEX] bfcache restore -> CLEARING + RESETTING form');
         sessionStorage.removeItem('pendingLoginEmail');
@@ -157,6 +171,17 @@
         // Reset password inputs to password type
         document.getElementById('loginPass').type = 'password';
         document.getElementById('resetPass').type = 'password';
+        console.log('[DEBUG INDEX] pageshow AFTER reset form state:', {
+          loginEmail: document.getElementById('loginEmail').value || 'EMPTY',
+          loginPass: document.getElementById('loginPass').value ? '***FILLED***' : 'EMPTY',
+          loginBtnDisabled: document.getElementById('loginBtn').disabled,
+          loginFormVisible: document.getElementById('loginForm').style.display
+        });
+        console.log('[DEBUG INDEX] pageshow AFTER reset sessionStorage:', {
+          adminToken: !!sessionStorage.getItem('adminToken'),
+          adminUser: !!sessionStorage.getItem('adminUser'),
+          pendingLoginEmail: sessionStorage.getItem('pendingLoginEmail')
+        });
       }
     });
 
